@@ -46,3 +46,8 @@ func (n NullNumeric) Encode(w *pgx.WriteBuf, oid pgx.Oid) error {
 
 	return n.Numeric.Encode(w, oid)
 }
+
+// Nullable returns valid NullNumeric with Numeric n.
+func (n Numeric) Nullable() NullNumeric {
+	return NullNumeric{n, true}
+}

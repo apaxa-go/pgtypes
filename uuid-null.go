@@ -45,3 +45,8 @@ func (u NullUUID) Encode(w *pgx.WriteBuf, oid pgx.Oid) error {
 
 	return u.UUID.Encode(w, oid)
 }
+
+// Nullable returns valid NullUUID with UUID u.
+func (u UUID) Nullable() NullUUID {
+	return NullUUID{u, true}
+}

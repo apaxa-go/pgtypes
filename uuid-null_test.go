@@ -107,3 +107,11 @@ func TestNullUUID_Encode2(t *testing.T) {
 		rows.Close()
 	}
 }
+
+func TestUUID_Nullable(t *testing.T) {
+	u := UUID{0x6b, 0xa7, 0xb8, 0x14 /**/, 0x9d, 0xad /**/, 0x11, 0xd1 /**/, 0x80, 0xb4 /**/, 0x00, 0xc0, 0x4f, 0xd4, 0x30, 0xc8}
+	nu := u.Nullable()
+	if !nu.Valid || nu.UUID != u {
+		t.Errorf("expect %v %v, got %v %v", true, u, nu.Valid, nu.UUID)
+	}
+}

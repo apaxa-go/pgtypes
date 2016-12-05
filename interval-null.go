@@ -45,3 +45,8 @@ func (n NullInterval) Encode(w *pgx.WriteBuf, oid pgx.Oid) error {
 
 	return n.Interval.Encode(w, oid)
 }
+
+// Nullable returns valid NullInterval with Interval i.
+func (i Interval) Nullable() NullInterval {
+	return NullInterval{i, true}
+}

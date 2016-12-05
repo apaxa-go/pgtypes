@@ -106,3 +106,11 @@ func TestNullInterval_Encode2(t *testing.T) {
 		rows.Close()
 	}
 }
+
+func TestInterval_Nullable(t *testing.T) {
+	i := Interval{1, 2, 3, IntervalGoPrecision}
+	ni := i.Nullable()
+	if !ni.Valid || ni.Interval != i {
+		t.Errorf("expect %v %v, got %v %v", true, i, ni.Valid, ni.Interval)
+	}
+}

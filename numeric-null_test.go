@@ -108,3 +108,12 @@ func TestNullNumeric_Encode2(t *testing.T) {
 		rows.Close()
 	}
 }
+
+func TestNumeric_Nullable(t *testing.T) {
+	var n Numeric
+	n.SetInt64(123)
+	nn := n.Nullable()
+	if !nn.Valid || !reflect.DeepEqual(nn.Numeric, n) {
+		t.Errorf("expect %v %v, got %v %v", true, n, nn.Valid, nn.Numeric)
+	}
+}
