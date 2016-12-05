@@ -21,7 +21,7 @@ func (n *NullInterval) Scan(vr *pgx.ValueReader) error {
 	}
 
 	if vr.Len() == -1 {
-		n.Interval, n.Valid = Interval{0, 0, 0, PgPrecision}, false
+		n.Interval, n.Valid = Interval{0, 0, 0, IntervalPgPrecision}, false
 		return nil
 	}
 

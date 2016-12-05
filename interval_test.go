@@ -39,30 +39,30 @@ func TestParse(t *testing.T) {
 	}
 
 	test := []testElement{
-		{"-1 year -2 mons +3 days -04:05:06", MicrosecondPrecision, Interval{-14, 3, -14706 * 1e9, NanosecondPrecision}, false},
-		{"-1 year 2 mons -3 days 04:05:06.789", MicrosecondPrecision, Interval{-10, -3, 14706789 * 1e6, NanosecondPrecision}, false},
-		{"", MicrosecondPrecision, Interval{0, 0, 0, NanosecondPrecision}, false},
-		{"00:00", MicrosecondPrecision, Interval{}, true},
-		{"year mons days", MicrosecondPrecision, Interval{}, true},
-		{"1.5 year", MicrosecondPrecision, Interval{}, true},
-		{"1,5 year", MicrosecondPrecision, Interval{}, true},
-		{"99999999999 year -2 mons +3 days -04:05:06", MicrosecondPrecision, Interval{}, true},
-		{"9 year 9999999999 mons +3 days -04:05:06", MicrosecondPrecision, Interval{}, true},
-		{"9 year -2 mons +99999999999 days -04:05:06", MicrosecondPrecision, Interval{}, true},
-		{"9 year -2 mons +9 days 040506", MicrosecondPrecision, Interval{}, true},
-		{"9 year -2 mons +9 days 04:06:99999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999", MicrosecondPrecision, Interval{}, true},
+		{"-1 year -2 mons +3 days -04:05:06", IntervalMicrosecondPrecision, Interval{-14, 3, -14706 * 1e9, IntervalNanosecondPrecision}, false},
+		{"-1 year 2 mons -3 days 04:05:06.789", IntervalMicrosecondPrecision, Interval{-10, -3, 14706789 * 1e6, IntervalNanosecondPrecision}, false},
+		{"", IntervalMicrosecondPrecision, Interval{0, 0, 0, IntervalNanosecondPrecision}, false},
+		{"00:00", IntervalMicrosecondPrecision, Interval{}, true},
+		{"year mons days", IntervalMicrosecondPrecision, Interval{}, true},
+		{"1.5 year", IntervalMicrosecondPrecision, Interval{}, true},
+		{"1,5 year", IntervalMicrosecondPrecision, Interval{}, true},
+		{"99999999999 year -2 mons +3 days -04:05:06", IntervalMicrosecondPrecision, Interval{}, true},
+		{"9 year 9999999999 mons +3 days -04:05:06", IntervalMicrosecondPrecision, Interval{}, true},
+		{"9 year -2 mons +99999999999 days -04:05:06", IntervalMicrosecondPrecision, Interval{}, true},
+		{"9 year -2 mons +9 days 040506", IntervalMicrosecondPrecision, Interval{}, true},
+		{"9 year -2 mons +9 days 04:06:99999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999", IntervalMicrosecondPrecision, Interval{}, true},
 		//TODO waiting check overflow
 		//{"2147483647 year 2147483647 mons 2147483647 days 00:00:00", MicrosecondPrecision, Interval{2147483647, 2147483647, 0, MicrosecondPrecision}, false},
 		//-2147483648 to 2147483647
 		//TODO waiting fix spaces
 		//{"   ", MicrosecondPrecision, Interval{}, true},
-		{"1 year", 15, Interval{12, 0, 0, PicosecondPrecision}, false},
-		{"132428754353245897987092345345:00:00", MicrosecondPrecision, Interval{}, true},
-		{"00:132428754353245897987092345345:00", MicrosecondPrecision, Interval{}, true},
-		{"00:00:132428754353245897987092345345", MicrosecondPrecision, Interval{}, true},
-		{"00:00:00.132428754353245897987092345345", MillisecondPrecision, Interval{0, 0, 132, MillisecondPrecision}, false},
-		{"00:00:00.132528754353245897987092345345", MillisecondPrecision, Interval{0, 0, 133, MillisecondPrecision}, false},
-		{"00:00:00.132628754353245897987092345345", MillisecondPrecision, Interval{0, 0, 133, MillisecondPrecision}, false},
+		{"1 year", 15, Interval{12, 0, 0, IntervalPicosecondPrecision}, false},
+		{"132428754353245897987092345345:00:00", IntervalMicrosecondPrecision, Interval{}, true},
+		{"00:132428754353245897987092345345:00", IntervalMicrosecondPrecision, Interval{}, true},
+		{"00:00:132428754353245897987092345345", IntervalMicrosecondPrecision, Interval{}, true},
+		{"00:00:00.132428754353245897987092345345", IntervalMillisecondPrecision, Interval{0, 0, 132, IntervalMillisecondPrecision}, false},
+		{"00:00:00.132528754353245897987092345345", IntervalMillisecondPrecision, Interval{0, 0, 133, IntervalMillisecondPrecision}, false},
+		{"00:00:00.132628754353245897987092345345", IntervalMillisecondPrecision, Interval{0, 0, 133, IntervalMillisecondPrecision}, false},
 	}
 
 	for _, v := range test {
@@ -89,63 +89,63 @@ func TestString(t *testing.T) {
 		// 0
 		{
 			s:   "-1 year -2 mons 3 days -04:05:06",
-			i:   Interval{-14, 3, -14706 * 1e9, NanosecondPrecision},
+			i:   Interval{-14, 3, -14706 * 1e9, IntervalNanosecondPrecision},
 			err: false,
 		},
 
 		// 1
 		{
 			s:   "-10 mons -3 days 04:05:06.789",
-			i:   Interval{-10, -3, 14706789 * 1e6, NanosecondPrecision},
+			i:   Interval{-10, -3, 14706789 * 1e6, IntervalNanosecondPrecision},
 			err: false,
 		},
 
 		// 2
 		{
 			s:   "1 mons",
-			i:   Interval{1, 0, 0, NanosecondPrecision},
+			i:   Interval{1, 0, 0, IntervalNanosecondPrecision},
 			err: false,
 		},
 
 		// 3
 		{
 			s:   "2 year -34:57:18",
-			i:   Interval{24, 0, -125838 * 1e9, NanosecondPrecision},
+			i:   Interval{24, 0, -125838 * 1e9, IntervalNanosecondPrecision},
 			err: false,
 		},
 
 		// 4
 		{
 			s:   "00:00:00",
-			i:   Interval{0, 0, 0, NanosecondPrecision},
+			i:   Interval{0, 0, 0, IntervalNanosecondPrecision},
 			err: false,
 		},
 
 		// 5
 		{
 			s:   "83 year 4 mons",
-			i:   Interval{1000, 0, 0, NanosecondPrecision},
+			i:   Interval{1000, 0, 0, IntervalNanosecondPrecision},
 			err: false,
 		},
 
 		// 6
 		{
 			s:   "1000 days",
-			i:   Interval{0, 1000, 0, NanosecondPrecision},
+			i:   Interval{0, 1000, 0, IntervalNanosecondPrecision},
 			err: false,
 		},
 
 		// 7
 		{
 			s:   "-1 mons",
-			i:   Interval{-1, 0, 0, NanosecondPrecision},
+			i:   Interval{-1, 0, 0, IntervalNanosecondPrecision},
 			err: false,
 		},
 
 		// 8
 		{
 			s:   "-1 mons",
-			i:   Interval{-1, 0, 0, NanosecondPrecision},
+			i:   Interval{-1, 0, 0, IntervalNanosecondPrecision},
 			err: false,
 		},
 
@@ -153,14 +153,14 @@ func TestString(t *testing.T) {
 		// 9
 		{
 			s:   "178956970 year 7 mons 2147483647 days",
-			i:   Interval{2147483647, 2147483647, 0, NanosecondPrecision},
+			i:   Interval{2147483647, 2147483647, 0, IntervalNanosecondPrecision},
 			err: false,
 		},
 
 		// 10
 		{
 			s:   "-178956970 year -8 mons -2147483648 days",
-			i:   Interval{-2147483648, -2147483648, 0, NanosecondPrecision},
+			i:   Interval{-2147483648, -2147483648, 0, IntervalNanosecondPrecision},
 			err: false,
 		},
 	}
@@ -183,57 +183,57 @@ func TestAdd(t *testing.T) {
 	test := []testElement{
 		// 0
 		{
-			Interval{-14, 3, -14706 * 1e9, NanosecondPrecision},
-			Interval{1, 2, 3 * 1e9, NanosecondPrecision},
-			Interval{-13, 5, -14703 * 1e9, NanosecondPrecision},
+			Interval{-14, 3, -14706 * 1e9, IntervalNanosecondPrecision},
+			Interval{1, 2, 3 * 1e9, IntervalNanosecondPrecision},
+			Interval{-13, 5, -14703 * 1e9, IntervalNanosecondPrecision},
 		},
 
 		// 1
 		{
-			Interval{0, 0, 0, NanosecondPrecision},
-			Interval{0, 0, 0, NanosecondPrecision},
-			Interval{0, 0, 0, NanosecondPrecision},
+			Interval{0, 0, 0, IntervalNanosecondPrecision},
+			Interval{0, 0, 0, IntervalNanosecondPrecision},
+			Interval{0, 0, 0, IntervalNanosecondPrecision},
 		},
 
 		// 2
 		{
-			Interval{0, 0, 0, NanosecondPrecision},
-			Interval{-14, 3, -14706 * 1e9, NanosecondPrecision},
-			Interval{-14, 3, -14706 * 1e9, NanosecondPrecision},
+			Interval{0, 0, 0, IntervalNanosecondPrecision},
+			Interval{-14, 3, -14706 * 1e9, IntervalNanosecondPrecision},
+			Interval{-14, 3, -14706 * 1e9, IntervalNanosecondPrecision},
 		},
 
 		// 3
 		{
-			Interval{-14, -15, -16 * 1e9, NanosecondPrecision},
-			Interval{-14, -15, -16 * 1e9, NanosecondPrecision},
-			Interval{-28, -30, -32 * 1e9, NanosecondPrecision},
+			Interval{-14, -15, -16 * 1e9, IntervalNanosecondPrecision},
+			Interval{-14, -15, -16 * 1e9, IntervalNanosecondPrecision},
+			Interval{-28, -30, -32 * 1e9, IntervalNanosecondPrecision},
 		},
 
 		// 4
 		{
-			Interval{-14, -15, -16 * 1e9, NanosecondPrecision},
-			Interval{14, 15, 16 * 1e9, NanosecondPrecision},
-			Interval{0, 0, 0, NanosecondPrecision},
+			Interval{-14, -15, -16 * 1e9, IntervalNanosecondPrecision},
+			Interval{14, 15, 16 * 1e9, IntervalNanosecondPrecision},
+			Interval{0, 0, 0, IntervalNanosecondPrecision},
 		},
 
 		// 5
 		{
-			Interval{14, 15, 16 * 1e9, NanosecondPrecision},
-			Interval{100, 200, 300 * 1e9, NanosecondPrecision},
-			Interval{114, 215, 316 * 1e9, NanosecondPrecision},
+			Interval{14, 15, 16 * 1e9, IntervalNanosecondPrecision},
+			Interval{100, 200, 300 * 1e9, IntervalNanosecondPrecision},
+			Interval{114, 215, 316 * 1e9, IntervalNanosecondPrecision},
 		},
 		// 6
 		{
-			Interval{0, 0, 0, NanosecondPrecision},
-			Interval{14, 15, 16 * 1e9, NanosecondPrecision},
-			Interval{14, 15, 16 * 1e9, NanosecondPrecision},
+			Interval{0, 0, 0, IntervalNanosecondPrecision},
+			Interval{14, 15, 16 * 1e9, IntervalNanosecondPrecision},
+			Interval{14, 15, 16 * 1e9, IntervalNanosecondPrecision},
 		},
 
 		// 7
 		{
-			Interval{14, 15, 16 * 1e9, NanosecondPrecision},
-			Interval{0, 0, 0, NanosecondPrecision},
-			Interval{14, 15, 16 * 1e9, NanosecondPrecision},
+			Interval{14, 15, 16 * 1e9, IntervalNanosecondPrecision},
+			Interval{0, 0, 0, IntervalNanosecondPrecision},
+			Interval{14, 15, 16 * 1e9, IntervalNanosecondPrecision},
 		},
 	}
 
@@ -257,7 +257,7 @@ func TestDuration(t *testing.T) {
 	test := []testElement{
 		// 0
 		{
-			Interval{0, 0, 86400 * 1e9, NanosecondPrecision},
+			Interval{0, 0, 86400 * 1e9, IntervalNanosecondPrecision},
 			30,
 			1440,
 			86400 * time.Second,
@@ -265,7 +265,7 @@ func TestDuration(t *testing.T) {
 
 		// 1
 		{
-			Interval{0, 10, 1 * 1e9, NanosecondPrecision},
+			Interval{0, 10, 1 * 1e9, IntervalNanosecondPrecision},
 			30,
 			1440,
 			864001 * time.Second,
@@ -273,7 +273,7 @@ func TestDuration(t *testing.T) {
 
 		// 2
 		{
-			Interval{10, 10, 1 * 1e9, NanosecondPrecision},
+			Interval{10, 10, 1 * 1e9, IntervalNanosecondPrecision},
 			30,
 			1440,
 			26784001 * time.Second, //2562000
@@ -281,7 +281,7 @@ func TestDuration(t *testing.T) {
 
 		// 3
 		{
-			Interval{20, 10, 1 * 1e9, NanosecondPrecision},
+			Interval{20, 10, 1 * 1e9, IntervalNanosecondPrecision},
 			0,
 			0,
 			time.Second,
@@ -289,7 +289,7 @@ func TestDuration(t *testing.T) {
 
 		// 4
 		{
-			Interval{-10, -5, -1 * 1e9, NanosecondPrecision},
+			Interval{-10, -5, -1 * 1e9, IntervalNanosecondPrecision},
 			30,
 			1400,
 			-25620001 * time.Second,
@@ -297,7 +297,7 @@ func TestDuration(t *testing.T) {
 
 		// 5
 		{
-			Interval{0, 0, 0, NanosecondPrecision},
+			Interval{0, 0, 0, IntervalNanosecondPrecision},
 			30,
 			1400,
 			0,
@@ -322,58 +322,58 @@ func TestSub(t *testing.T) {
 	test := []testElement{
 		// 0
 		{
-			Interval{1, 2, 3 * 1e9, NanosecondPrecision},
-			Interval{2, 3, 4 * 1e9, NanosecondPrecision},
-			Interval{-1, -1, -1 * 1e9, NanosecondPrecision},
+			Interval{1, 2, 3 * 1e9, IntervalNanosecondPrecision},
+			Interval{2, 3, 4 * 1e9, IntervalNanosecondPrecision},
+			Interval{-1, -1, -1 * 1e9, IntervalNanosecondPrecision},
 		},
 
 		// 1
 		{
-			Interval{0, 0, 0, NanosecondPrecision},
-			Interval{2, 3, 4 * 1e9, NanosecondPrecision},
-			Interval{-2, -3, -4 * 1e9, NanosecondPrecision},
+			Interval{0, 0, 0, IntervalNanosecondPrecision},
+			Interval{2, 3, 4 * 1e9, IntervalNanosecondPrecision},
+			Interval{-2, -3, -4 * 1e9, IntervalNanosecondPrecision},
 		},
 
 		// 2
 		{
-			Interval{1, 2, 3 * 1e9, NanosecondPrecision},
-			Interval{0, 0, 0, NanosecondPrecision},
-			Interval{1, 2, 3 * 1e9, NanosecondPrecision},
+			Interval{1, 2, 3 * 1e9, IntervalNanosecondPrecision},
+			Interval{0, 0, 0, IntervalNanosecondPrecision},
+			Interval{1, 2, 3 * 1e9, IntervalNanosecondPrecision},
 		},
 
 		// 3
 		{
-			Interval{0, 0, 0, NanosecondPrecision},
-			Interval{0, 0, 0, NanosecondPrecision},
-			Interval{0, 0, 0, NanosecondPrecision},
+			Interval{0, 0, 0, IntervalNanosecondPrecision},
+			Interval{0, 0, 0, IntervalNanosecondPrecision},
+			Interval{0, 0, 0, IntervalNanosecondPrecision},
 		},
 
 		// 4
 		{
-			Interval{1, 2, 3 * 1e9, NanosecondPrecision},
-			Interval{1, 2, 3 * 1e9, NanosecondPrecision},
-			Interval{0, 0, 0, NanosecondPrecision},
+			Interval{1, 2, 3 * 1e9, IntervalNanosecondPrecision},
+			Interval{1, 2, 3 * 1e9, IntervalNanosecondPrecision},
+			Interval{0, 0, 0, IntervalNanosecondPrecision},
 		},
 
 		// 5
 		{
-			Interval{-1, -2, -3 * 1e9, NanosecondPrecision},
-			Interval{1, 2, 3 * 1e9, NanosecondPrecision},
-			Interval{-2, -4, -6 * 1e9, NanosecondPrecision},
+			Interval{-1, -2, -3 * 1e9, IntervalNanosecondPrecision},
+			Interval{1, 2, 3 * 1e9, IntervalNanosecondPrecision},
+			Interval{-2, -4, -6 * 1e9, IntervalNanosecondPrecision},
 		},
 
 		// 6
 		{
-			Interval{-2147483648, -2147483648, -3 * 1e9, NanosecondPrecision},
-			Interval{-1, -2, -3 * 1e9, NanosecondPrecision},
-			Interval{-2147483647, -2147483646, 0, NanosecondPrecision},
+			Interval{-2147483648, -2147483648, -3 * 1e9, IntervalNanosecondPrecision},
+			Interval{-1, -2, -3 * 1e9, IntervalNanosecondPrecision},
+			Interval{-2147483647, -2147483646, 0, IntervalNanosecondPrecision},
 		},
 
 		// 7
 		{
-			Interval{2147483647, 2147483647, -3 * 1e9, NanosecondPrecision},
-			Interval{1, 2, -3 * 1e9, NanosecondPrecision},
-			Interval{2147483646, 2147483645, 0, NanosecondPrecision},
+			Interval{2147483647, 2147483647, -3 * 1e9, IntervalNanosecondPrecision},
+			Interval{1, 2, -3 * 1e9, IntervalNanosecondPrecision},
+			Interval{2147483646, 2147483645, 0, IntervalNanosecondPrecision},
 		},
 	}
 
@@ -395,16 +395,16 @@ func TestMul(t *testing.T) {
 	test := []testElement{
 		// 0
 		{
-			Interval{1, 2, 3 * 1e9, NanosecondPrecision},
+			Interval{1, 2, 3 * 1e9, IntervalNanosecondPrecision},
 			2,
-			Interval{2, 4, 6 * 1e9, NanosecondPrecision},
+			Interval{2, 4, 6 * 1e9, IntervalNanosecondPrecision},
 		},
 
 		// 1
 		{
-			Interval{1, 2, 3 * 1e9, NanosecondPrecision},
+			Interval{1, 2, 3 * 1e9, IntervalNanosecondPrecision},
 			-2,
-			Interval{-2, -4, -6 * 1e9, NanosecondPrecision},
+			Interval{-2, -4, -6 * 1e9, IntervalNanosecondPrecision},
 		},
 
 		// 2
@@ -417,16 +417,16 @@ func TestMul(t *testing.T) {
 
 		// 3
 		{
-			Interval{1, 2, 3 * 1e9, NanosecondPrecision},
+			Interval{1, 2, 3 * 1e9, IntervalNanosecondPrecision},
 			0,
-			Interval{0, 0, 0, NanosecondPrecision},
+			Interval{0, 0, 0, IntervalNanosecondPrecision},
 		},
 
 		// 4
 		{
-			Interval{0, 0, 0, NanosecondPrecision},
+			Interval{0, 0, 0, IntervalNanosecondPrecision},
 			-2,
-			Interval{0, 0, 0, NanosecondPrecision},
+			Interval{0, 0, 0, IntervalNanosecondPrecision},
 		},
 	}
 
@@ -449,9 +449,9 @@ func TestDiv(t *testing.T) {
 	test := []testElement{
 		// 0
 		{
-			Interval{4, 6, 8 * 1e9, NanosecondPrecision},
+			Interval{4, 6, 8 * 1e9, IntervalNanosecondPrecision},
 			2,
-			Interval{2, 3, 4 * 1e9, NanosecondPrecision},
+			Interval{2, 3, 4 * 1e9, IntervalNanosecondPrecision},
 		},
 
 		// 1
@@ -480,15 +480,15 @@ func TestInterval_Cmp(t *testing.T) {
 		sign       int
 	}
 	tests := []testElement{
-		{Interval{1, 2, 3 * 1e9, NanosecondPrecision}, Interval{2, 3, 4 * 1e9, NanosecondPrecision}, true, -1},
-		{Interval{10, 2, 3 * 1e9, NanosecondPrecision}, Interval{1, 2, 3 * 1e9, NanosecondPrecision}, true, 1},
-		{Interval{1, 20, 3 * 1e9, NanosecondPrecision}, Interval{1, 2, 3 * 1e9, NanosecondPrecision}, true, 1},
-		{Interval{10, 20, 30 * 1e9, NanosecondPrecision}, Interval{2, 3, 4 * 1e9, NanosecondPrecision}, true, 1},
-		{Interval{1, 2, 3 * 1e9, NanosecondPrecision}, Interval{1, 2, 3 * 1e9, NanosecondPrecision}, true, 0},
-		{Interval{1, 2, 3 * 1e9, NanosecondPrecision}, Interval{1, 2, 3 * 1e6, MicrosecondPrecision}, true, 0},
-		{Interval{1, 0, 86400 * 1e9, NanosecondPrecision}, Interval{1, 1, 0, NanosecondPrecision}, false, 0},
-		{Interval{1, 0, 86400 * 1e3, MillisecondPrecision}, Interval{1, 1, 0, NanosecondPrecision}, false, 0},
-		{Interval{-2147483648, -2147483648, 0, NanosecondPrecision}, Interval{2147483647, -2147483647, 0, NanosecondPrecision}, true, -1},
+		{Interval{1, 2, 3 * 1e9, IntervalNanosecondPrecision}, Interval{2, 3, 4 * 1e9, IntervalNanosecondPrecision}, true, -1},
+		{Interval{10, 2, 3 * 1e9, IntervalNanosecondPrecision}, Interval{1, 2, 3 * 1e9, IntervalNanosecondPrecision}, true, 1},
+		{Interval{1, 20, 3 * 1e9, IntervalNanosecondPrecision}, Interval{1, 2, 3 * 1e9, IntervalNanosecondPrecision}, true, 1},
+		{Interval{10, 20, 30 * 1e9, IntervalNanosecondPrecision}, Interval{2, 3, 4 * 1e9, IntervalNanosecondPrecision}, true, 1},
+		{Interval{1, 2, 3 * 1e9, IntervalNanosecondPrecision}, Interval{1, 2, 3 * 1e9, IntervalNanosecondPrecision}, true, 0},
+		{Interval{1, 2, 3 * 1e9, IntervalNanosecondPrecision}, Interval{1, 2, 3 * 1e6, IntervalMicrosecondPrecision}, true, 0},
+		{Interval{1, 0, 86400 * 1e9, IntervalNanosecondPrecision}, Interval{1, 1, 0, IntervalNanosecondPrecision}, false, 0},
+		{Interval{1, 0, 86400 * 1e3, IntervalMillisecondPrecision}, Interval{1, 1, 0, IntervalNanosecondPrecision}, false, 0},
+		{Interval{-2147483648, -2147483648, 0, IntervalNanosecondPrecision}, Interval{2147483647, -2147483647, 0, IntervalNanosecondPrecision}, true, -1},
 	}
 
 	// Extend tests: Cmp(a,b)=-Cmp(b,a)
@@ -548,42 +548,42 @@ func TestAddToAndSubFrom(t *testing.T) {
 	test := []testElement{
 		// 0
 		{
-			Interval{0, 0, 1 * 1e9, NanosecondPrecision},
+			Interval{0, 0, 1 * 1e9, IntervalNanosecondPrecision},
 			time.Unix(0, 0),
 			time.Unix(1, 0),
 		},
 
 		// 1
 		{
-			Interval{0, 0, 1 * 1e9, NanosecondPrecision},
+			Interval{0, 0, 1 * 1e9, IntervalNanosecondPrecision},
 			time.Unix(0, 0),
 			time.Unix(1, 0),
 		},
 
 		// 2
 		{
-			Interval{0, 0, 1 * 1e9, NanosecondPrecision},
+			Interval{0, 0, 1 * 1e9, IntervalNanosecondPrecision},
 			time.Unix(86400, 0),
 			time.Unix(86401, 0),
 		},
 
 		// 3
 		{
-			Interval{0, 0, 1 * 1e9, NanosecondPrecision},
+			Interval{0, 0, 1 * 1e9, IntervalNanosecondPrecision},
 			time.Unix(0, 9223372035854775807),
 			time.Unix(0, 9223372036854775807),
 		},
 
 		// 4
 		{
-			Interval{0, 0, 9223372036854775807, NanosecondPrecision},
+			Interval{0, 0, 9223372036854775807, IntervalNanosecondPrecision},
 			time.Unix(0, 0),
 			time.Unix(9223372036, 854775807),
 		},
 
 		// 5
 		{
-			Interval{0, 0, -4775808, NanosecondPrecision},
+			Interval{0, 0, -4775808, IntervalNanosecondPrecision},
 			time.Unix(0, 0),
 			time.Unix(0, -4775808),
 		},
@@ -618,7 +618,7 @@ func TestNormal(t *testing.T) {
 	test := []testElement{
 		// 0
 		{
-			Interval{1001, 101, 10013 * 1e8, NanosecondPrecision},
+			Interval{1001, 101, 10013 * 1e8, IntervalNanosecondPrecision},
 			83,
 			5,
 			101,
@@ -630,7 +630,7 @@ func TestNormal(t *testing.T) {
 
 		// 1
 		{
-			Interval{0, 0, 0, NanosecondPrecision},
+			Interval{0, 0, 0, IntervalNanosecondPrecision},
 			0,
 			0,
 			0,
@@ -642,7 +642,7 @@ func TestNormal(t *testing.T) {
 
 		// 2
 		{
-			Interval{-128, 97, 24001789 * 1e6, NanosecondPrecision},
+			Interval{-128, 97, 24001789 * 1e6, IntervalNanosecondPrecision},
 			-10,
 			-8,
 			97,
@@ -687,52 +687,52 @@ func TestNormal(t *testing.T) {
 
 func TestAll(t *testing.T) {
 	i := Picosecond()
-	if i.SomeSeconds != 1 || i.precision != PicosecondPrecision {
+	if i.SomeSeconds != 1 || i.precision != IntervalPicosecondPrecision {
 		t.Error("Error")
 	}
 
 	i = Nanosecond()
-	if i.SomeSeconds != 1 || i.precision != NanosecondPrecision {
+	if i.SomeSeconds != 1 || i.precision != IntervalNanosecondPrecision {
 		t.Error("Error")
 	}
 
 	i = Microsecond()
-	if i.SomeSeconds != 1e3 || i.precision != NanosecondPrecision {
+	if i.SomeSeconds != 1e3 || i.precision != IntervalNanosecondPrecision {
 		t.Error("Error")
 	}
 
 	i = Millisecond()
-	if i.SomeSeconds != 1e6 || i.precision != NanosecondPrecision {
+	if i.SomeSeconds != 1e6 || i.precision != IntervalNanosecondPrecision {
 		t.Error("Error")
 	}
 
 	i = Second()
-	if i.SomeSeconds != 1e9 || i.precision != NanosecondPrecision {
+	if i.SomeSeconds != 1e9 || i.precision != IntervalNanosecondPrecision {
 		t.Error("Error")
 	}
 
 	i = Minute()
-	if i.SomeSeconds != 60*1e9 || i.precision != NanosecondPrecision {
+	if i.SomeSeconds != 60*1e9 || i.precision != IntervalNanosecondPrecision {
 		t.Error("Error")
 	}
 
 	i = Hour()
-	if i.SomeSeconds != 3600*1e9 || i.precision != NanosecondPrecision {
+	if i.SomeSeconds != 3600*1e9 || i.precision != IntervalNanosecondPrecision {
 		t.Error("Error")
 	}
 
 	i = Day()
-	if i.Days != 1 || i.precision != NanosecondPrecision {
+	if i.Days != 1 || i.precision != IntervalNanosecondPrecision {
 		t.Error("Error")
 	}
 
 	i = Month()
-	if i.Months != 1 || i.precision != NanosecondPrecision {
+	if i.Months != 1 || i.precision != IntervalNanosecondPrecision {
 		t.Error("Error")
 	}
 
 	i = Year()
-	if i.Months != 12 || i.precision != NanosecondPrecision {
+	if i.Months != 12 || i.precision != IntervalNanosecondPrecision {
 		t.Error("Error")
 	}
 }
@@ -745,37 +745,37 @@ func TestFromDuration(t *testing.T) {
 	test := []testElement{
 		// 0
 		{
-			Interval{0, 0, 86400 * 1e9, NanosecondPrecision},
+			Interval{0, 0, 86400 * 1e9, IntervalNanosecondPrecision},
 			86400 * time.Second,
 		},
 
 		// 1
 		{
-			Interval{0, 0, 8 * 1e9, NanosecondPrecision},
+			Interval{0, 0, 8 * 1e9, IntervalNanosecondPrecision},
 			8 * time.Second,
 		},
 
 		// 2
 		{
-			Interval{0, 0, -9223372036854775808, NanosecondPrecision},
+			Interval{0, 0, -9223372036854775808, IntervalNanosecondPrecision},
 			-9223372036854775808,
 		},
 
 		// 3
 		{
-			Interval{0, 0, 9223372036854775807, NanosecondPrecision},
+			Interval{0, 0, 9223372036854775807, IntervalNanosecondPrecision},
 			9223372036854775807,
 		},
 
 		// 4
 		{
-			Interval{0, 0, 0, NanosecondPrecision},
+			Interval{0, 0, 0, IntervalNanosecondPrecision},
 			0,
 		},
 
 		// 5
 		{
-			Interval{0, 0, -0000000001, NanosecondPrecision},
+			Interval{0, 0, -0000000001, IntervalNanosecondPrecision},
 			-1,
 		},
 	}
@@ -796,63 +796,63 @@ func TestDiff(t *testing.T) {
 	test := []testElement{
 		// 0
 		{
-			Interval{0, 0, 1 * 1e9, NanosecondPrecision},
+			Interval{0, 0, 1 * 1e9, IntervalNanosecondPrecision},
 			time.Unix(0, 0),
 			time.Unix(1, 0),
 		},
 
 		// 1
 		{
-			Interval{0, 0, -1 * 1e9, NanosecondPrecision},
+			Interval{0, 0, -1 * 1e9, IntervalNanosecondPrecision},
 			time.Unix(1, 0),
 			time.Unix(0, 0),
 		},
 
 		// 2
 		{
-			Interval{0, 0, -0000000001, NanosecondPrecision},
+			Interval{0, 0, -0000000001, IntervalNanosecondPrecision},
 			time.Unix(0, 1),
 			time.Unix(0, 0),
 		},
 
 		// 3
 		{
-			Interval{0, 0, 0000000001, NanosecondPrecision},
+			Interval{0, 0, 0000000001, IntervalNanosecondPrecision},
 			time.Unix(0, 0),
 			time.Unix(0, 1),
 		},
 
 		// 4
 		{
-			Interval{0, 0, 0, NanosecondPrecision},
+			Interval{0, 0, 0, IntervalNanosecondPrecision},
 			time.Unix(0, 0),
 			time.Unix(0, 0),
 		},
 
 		// 5
 		{
-			Interval{0, 0, 5854775807, NanosecondPrecision},
+			Interval{0, 0, 5854775807, IntervalNanosecondPrecision},
 			time.Unix(1, 0),
 			time.Unix(0, 6854775807),
 		},
 
 		// 6
 		{
-			Interval{0, 0, -9223372036854775807, NanosecondPrecision},
+			Interval{0, 0, -9223372036854775807, IntervalNanosecondPrecision},
 			time.Unix(0, 9223372036854775807),
 			time.Unix(0, 0),
 		},
 
 		// 7
 		{
-			Interval{0, 0, 9223372036854775807, NanosecondPrecision},
+			Interval{0, 0, 9223372036854775807, IntervalNanosecondPrecision},
 			time.Unix(0, 0),
 			time.Unix(9223372036, 854775807),
 		},
 
 		// 8
 		{
-			Interval{0, 0, -9223372036854775808, NanosecondPrecision},
+			Interval{0, 0, -9223372036854775808, IntervalNanosecondPrecision},
 			time.Unix(0, 0),
 			time.Unix(0, -9223372036854775808),
 		},
@@ -875,77 +875,77 @@ func TestDiffExtended(t *testing.T) {
 	test := []testElement{
 		// 0
 		{
-			Interval{3507, 10, 85636854775807, NanosecondPrecision},
+			Interval{3507, 10, 85636854775807, IntervalNanosecondPrecision},
 			"1970-01-01T00:00:00Z",
 			"2262-04-11T23:47:16.854775807Z",
 		},
 
 		// 1
 		{
-			Interval{0, 0, 0, NanosecondPrecision},
+			Interval{0, 0, 0, IntervalNanosecondPrecision},
 			"1970-01-01T00:00:00Z",
 			"1970-01-01T00:00:00Z",
 		},
 
 		// 2
 		{
-			Interval{0, 0, 1 * 1e9, NanosecondPrecision},
+			Interval{0, 0, 1 * 1e9, IntervalNanosecondPrecision},
 			"1970-01-01T00:00:58Z",
 			"1970-01-01T00:00:59Z",
 		},
 
 		// 3
 		{
-			Interval{12, 0, 1260 * 1e9, NanosecondPrecision},
+			Interval{12, 0, 1260 * 1e9, IntervalNanosecondPrecision},
 			"1970-01-01T00:11:00Z",
 			"1971-01-01T00:32:00Z",
 		},
 
 		// 4
 		{
-			Interval{12, 0, 3600 * 1e9, NanosecondPrecision},
+			Interval{12, 0, 3600 * 1e9, IntervalNanosecondPrecision},
 			"1970-01-01T22:00:00Z",
 			"1971-01-01T23:00:00Z",
 		},
 
 		// 5
 		{
-			Interval{0, 11, 0, NanosecondPrecision},
+			Interval{0, 11, 0, IntervalNanosecondPrecision},
 			"1970-01-14T00:00:00Z",
 			"1970-01-25T00:00:00Z",
 		},
 
 		// 6
 		{
-			Interval{8, 11, 0, NanosecondPrecision},
+			Interval{8, 11, 0, IntervalNanosecondPrecision},
 			"1970-03-14T00:00:00Z",
 			"1970-11-25T00:00:00Z",
 		},
 
 		// 7
 		{
-			Interval{12, 0, 0, NanosecondPrecision},
+			Interval{12, 0, 0, IntervalNanosecondPrecision},
 			"1970-01-01T00:00:00Z",
 			"1971-01-01T00:00:00Z",
 		},
 
 		// 8
 		{
-			Interval{852, 0, 0, NanosecondPrecision},
+			Interval{852, 0, 0, IntervalNanosecondPrecision},
 			"1900-01-01T00:00:00Z",
 			"1971-01-01T00:00:00Z",
 		},
 
 		// 9
 		{
-			Interval{-3507, -10, -85636854775807, NanosecondPrecision},
+			Interval{-3507, -10, -85636854775807, IntervalNanosecondPrecision},
 			"2262-04-11T23:47:16.854775807Z",
 			"1970-01-01T00:00:00Z",
 		},
 
 		// 10
 		{
-			Interval{-1192, 11, 0, NanosecondPrecision},
+			Interval{-1192, 11, 0, IntervalNanosecondPrecision},
 			"2000-03-01T00:00:00Z",
 			"1900-11-12T00:00:00Z",
 		},
@@ -1001,23 +1001,23 @@ func TestSinceExtended(t *testing.T) {
 }
 
 func TestNewInterval(t *testing.T) {
-	if i := NewInterval(MicrosecondPrecision); i.Days != 0 || i.Months != 0 || i.SomeSeconds != 0 || i.precision != MicrosecondPrecision {
-		t.Errorf("expect %v %v, got %v", 0, MicrosecondPrecision, i)
+	if i := NewInterval(IntervalMicrosecondPrecision); i.Days != 0 || i.Months != 0 || i.SomeSeconds != 0 || i.precision != IntervalMicrosecondPrecision {
+		t.Errorf("expect %v %v, got %v", 0, IntervalMicrosecondPrecision, i)
 	}
-	if i := NewInterval(15); i.Days != 0 || i.Months != 0 || i.SomeSeconds != 0 || i.precision != maxPrecision {
-		t.Errorf("expect %v %v, got %v", 0, maxPrecision, i)
+	if i := NewInterval(15); i.Days != 0 || i.Months != 0 || i.SomeSeconds != 0 || i.precision != IntervalMaxPrecision {
+		t.Errorf("expect %v %v, got %v", 0, IntervalMaxPrecision, i)
 	}
 }
 
 func TestNewGoInterval(t *testing.T) {
-	if i := NewGoInterval(); i.Days != 0 || i.Months != 0 || i.SomeSeconds != 0 || i.precision != GoPrecision {
-		t.Errorf("expect %v %v, got %v", 0, GoPrecision, i)
+	if i := NewGoInterval(); i.Days != 0 || i.Months != 0 || i.SomeSeconds != 0 || i.precision != IntervalGoPrecision {
+		t.Errorf("expect %v %v, got %v", 0, IntervalGoPrecision, i)
 	}
 }
 
 func TestNewPgInterval(t *testing.T) {
-	if i := NewPgInterval(); i.Days != 0 || i.Months != 0 || i.SomeSeconds != 0 || i.precision != PgPrecision {
-		t.Errorf("expect %v %v, got %v", 0, PgPrecision, i)
+	if i := NewPgInterval(); i.Days != 0 || i.Months != 0 || i.SomeSeconds != 0 || i.precision != IntervalPgPrecision {
+		t.Errorf("expect %v %v, got %v", 0, IntervalPgPrecision, i)
 	}
 }
 
@@ -1028,11 +1028,11 @@ func TestInterval_SetPrecision(t *testing.T) {
 		r Interval
 	}
 	tests := []testElement{
-		{Interval{1, 2, 1, SecondPrecision}, MillisecondPrecision, Interval{1, 2, 1000, MillisecondPrecision}},
-		{Interval{1, 2, 1, MillisecondPrecision}, MillisecondPrecision, Interval{1, 2, 1, MillisecondPrecision}},
-		{Interval{1, 2, 1499, MillisecondPrecision}, SecondPrecision, Interval{1, 2, 1, SecondPrecision}},
-		{Interval{1, 2, 1500, MillisecondPrecision}, SecondPrecision, Interval{1, 2, 2, SecondPrecision}},
-		{Interval{1, 2, 1, NanosecondPrecision}, 15, Interval{1, 2, 1000, PicosecondPrecision}},
+		{Interval{1, 2, 1, IntervalSecondPrecision}, IntervalMillisecondPrecision, Interval{1, 2, 1000, IntervalMillisecondPrecision}},
+		{Interval{1, 2, 1, IntervalMillisecondPrecision}, IntervalMillisecondPrecision, Interval{1, 2, 1, IntervalMillisecondPrecision}},
+		{Interval{1, 2, 1499, IntervalMillisecondPrecision}, IntervalSecondPrecision, Interval{1, 2, 1, IntervalSecondPrecision}},
+		{Interval{1, 2, 1500, IntervalMillisecondPrecision}, IntervalSecondPrecision, Interval{1, 2, 2, IntervalSecondPrecision}},
+		{Interval{1, 2, 1, IntervalNanosecondPrecision}, 15, Interval{1, 2, 1000, IntervalPicosecondPrecision}},
 	}
 	for _, v := range tests {
 		if r := v.i.SetPrecision(v.p); r != v.r {
@@ -1042,12 +1042,12 @@ func TestInterval_SetPrecision(t *testing.T) {
 }
 
 func TestInterval_Precision(t *testing.T) {
-	i := Interval{0, 0, 0, SecondPrecision}
-	if i.Precision() != SecondPrecision {
+	i := Interval{0, 0, 0, IntervalSecondPrecision}
+	if i.Precision() != IntervalSecondPrecision {
 		t.Error("error")
 	}
-	i = Interval{0, 0, 0, MillisecondPrecision}
-	if i.Precision() != MillisecondPrecision {
+	i = Interval{0, 0, 0, IntervalMillisecondPrecision}
+	if i.Precision() != IntervalMillisecondPrecision {
 		t.Error("error")
 	}
 }
@@ -1061,9 +1061,9 @@ func TestInterval_SafePrec(t *testing.T) {
 	//	10 milliseconds => 2 (2 digit after decimal point precision)
 	// 	123 microseconds => 6 (microsecond precision)
 	tests := []testElement{
-		{Interval{1, 2, 10, SecondPrecision}, SecondPrecision},
-		{Interval{1, 2, 10, MillisecondPrecision}, 2},
-		{Interval{1, 2, 123, MicrosecondPrecision}, MicrosecondPrecision},
+		{Interval{1, 2, 10, IntervalSecondPrecision}, IntervalSecondPrecision},
+		{Interval{1, 2, 10, IntervalMillisecondPrecision}, 2},
+		{Interval{1, 2, 123, IntervalMicrosecondPrecision}, IntervalMicrosecondPrecision},
 	}
 	for _, v := range tests {
 		if r := v.i.SafePrec(); r != v.p {
@@ -1078,10 +1078,10 @@ func TestInterval_In(t *testing.T) {
 		r      int64
 	}
 	tests := []testElement{
-		{Interval{0, 0, 1, GoPrecision}, Interval{0, 0, 10, GoPrecision}, 10},
-		{Interval{0, 0, 1, MillisecondPrecision}, Interval{0, 0, 1, SecondPrecision}, 1000},
-		{Interval{0, 1, 0, GoPrecision}, Interval{1, 0, 0, SecondPrecision}, 30},
-		{Interval{0, 0, 1, SecondPrecision}, Interval{0, 1, 0, GoPrecision}, 3600 * 24},
+		{Interval{0, 0, 1, IntervalGoPrecision}, Interval{0, 0, 10, IntervalGoPrecision}, 10},
+		{Interval{0, 0, 1, IntervalMillisecondPrecision}, Interval{0, 0, 1, IntervalSecondPrecision}, 1000},
+		{Interval{0, 1, 0, IntervalGoPrecision}, Interval{1, 0, 0, IntervalSecondPrecision}, 30},
+		{Interval{0, 0, 1, IntervalSecondPrecision}, Interval{0, 1, 0, IntervalGoPrecision}, 3600 * 24},
 	}
 	for _, v := range tests {
 		if r := v.i1.In(v.i2); r != v.r {

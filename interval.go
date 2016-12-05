@@ -11,16 +11,16 @@ import (
 	"time"
 )
 
-// Predefined precisions.
+// Predefined precisions for Interval.
 const (
-	SecondPrecision      = 0
-	MillisecondPrecision = 3
-	MicrosecondPrecision = 6
-	NanosecondPrecision  = 9
-	PicosecondPrecision  = 12
-	GoPrecision          = NanosecondPrecision
-	PgPrecision          = MicrosecondPrecision
-	maxPrecision         = 12
+	IntervalSecondPrecision = 0
+	IntervalMillisecondPrecision = 3
+	IntervalMicrosecondPrecision = 6
+	IntervalNanosecondPrecision = 9
+	IntervalPicosecondPrecision = 12
+	IntervalGoPrecision = IntervalNanosecondPrecision
+	IntervalPgPrecision = IntervalMicrosecondPrecision
+	IntervalMaxPrecision = 12
 )
 
 // RE for parse interval in postgres style specification.
@@ -32,7 +32,7 @@ var re = regexp.MustCompile(`^(?:([+-]?[0-9]+) years?)? ?(?:([+-]?[0-9]+) mons?)
 // 	Months - number months
 // 	Days - number of days
 // 	SomeSeconds - number of seconds or some smaller units (depends on precision).
-// All fields are signed. Sign of one field is independent from sign of other field.
+// All fields are signed. Sign of one field is independent from sign of others.
 // Interval internally stores precision. Precision is number of digits after comma in 10-based representation of seconds.
 // Precision can be from [0; 12] where 0 means that SomeSeconds is seconds and 12 means that SomeSeconds is picoseconds.
 // If Interval created without calling constructor when it has 0 precision (i.e. SomeSeconds is just seconds).
@@ -40,9 +40,7 @@ var re = regexp.MustCompile(`^(?:([+-]?[0-9]+) years?)? ?(?:([+-]?[0-9]+) mons?)
 // If interval is used to store PostgreSQL Interval when recommended precision is 6 (microsecond) because PostgreSQL use microsecond precision.
 // This type is similar to Postgres interval data type.
 // Value from one field is never automatically translated to value of another field, so <60*60*24 seconds> != <1 days> and so on.
-// This is because of:
-// 	1) compatibility with Postgres;
-// 	2) day may have different amount of seconds and month may have different amount of days.
+// This is because of compatibility with Postgres, moreover day may have different amount of seconds and month may have different amount of days.
 type Interval struct {
 	Months      int32
 	Days        int32
@@ -53,52 +51,52 @@ type Interval struct {
 // Picosecond returns new Interval equal to 1 picosecond.
 // This constructor return interval with precision = 12 (picosecond).
 func Picosecond() Interval {
-	return Interval{SomeSeconds: 1, precision: PicosecondPrecision}
+	return Interval{SomeSeconds: 1, precision: IntervalPicosecondPrecision}
 }
 
 // Nanosecond returns new Interval equal to 1 nanosecond.
 func Nanosecond() Interval {
-	return Interval{SomeSeconds: 1, precision: GoPrecision}
+	return Interval{SomeSeconds: 1, precision: IntervalGoPrecision}
 }
 
 // Microsecond returns new Interval equal to 1 microsecond.
 func Microsecond() Interval {
-	return Interval{SomeSeconds: timeh.NanosecsInMicrosec, precision: GoPrecision}
+	return Interval{SomeSeconds: timeh.NanosecsInMicrosec, precision: IntervalGoPrecision}
 }
 
 // Millisecond returns new Interval equal to 1 millisecond.
 func Millisecond() Interval {
-	return Interval{SomeSeconds: timeh.NanosecsInMillisec, precision: GoPrecision}
+	return Interval{SomeSeconds: timeh.NanosecsInMillisec, precision: IntervalGoPrecision}
 }
 
 // Second returns new Interval equal to 1 second.
 func Second() Interval {
-	return Interval{SomeSeconds: timeh.NanosecsInSec, precision: GoPrecision}
+	return Interval{SomeSeconds: timeh.NanosecsInSec, precision: IntervalGoPrecision}
 }
 
 // Minute returns new Interval equal to 1 minute (60 seconds).
 func Minute() Interval {
-	return Interval{SomeSeconds: timeh.NanosecsInSec * timeh.SecsInMin, precision: GoPrecision}
+	return Interval{SomeSeconds: timeh.NanosecsInSec * timeh.SecsInMin, precision: IntervalGoPrecision}
 }
 
 // Hour returns new Interval equal to 1 hour (3600 seconds).
 func Hour() Interval {
-	return Interval{SomeSeconds: timeh.NanosecsInSec * timeh.SecsInHour, precision: GoPrecision}
+	return Interval{SomeSeconds: timeh.NanosecsInSec * timeh.SecsInHour, precision: IntervalGoPrecision}
 }
 
 // Day returns new Interval equal to 1 day.
 func Day() Interval {
-	return Interval{Days: 1, precision: GoPrecision}
+	return Interval{Days: 1, precision: IntervalGoPrecision}
 }
 
 // Month returns new Interval equal to 1 month.
 func Month() Interval {
-	return Interval{Months: 1, precision: GoPrecision}
+	return Interval{Months: 1, precision: IntervalGoPrecision}
 }
 
 // Year returns new Interval equal to 1 year (12 months).
 func Year() Interval {
-	return Interval{Months: timeh.MonthsInYear, precision: GoPrecision}
+	return Interval{Months: timeh.MonthsInYear, precision: IntervalGoPrecision}
 }
 
 // ParseInterval parses incoming string and extract interval with requested precision p.
@@ -109,8 +107,8 @@ func Year() Interval {
 // 	2 year -34:56:78
 // 	00:00:00
 func ParseInterval(s string, p uint8) (i Interval, err error) {
-	if p > maxPrecision {
-		i.precision = maxPrecision
+	if p > IntervalMaxPrecision {
+		i.precision = IntervalMaxPrecision
 	} else {
 		i.precision = p
 	}
@@ -216,13 +214,13 @@ func ParseInterval(s string, p uint8) (i Interval, err error) {
 
 // FromDuration returns new Interval equivalent for given time.Duration (convert time.Duration to Interval).
 func FromDuration(d time.Duration) Interval {
-	return Interval{SomeSeconds: d.Nanoseconds(), precision: GoPrecision}
+	return Interval{SomeSeconds: d.Nanoseconds(), precision: IntervalGoPrecision}
 }
 
 // Diff calculates difference between given timestamps (time.Time) as nanoseconds and returns result as Interval (=to-from).
 // Result always have months & days parts set to zero.
 func Diff(from, to time.Time) Interval {
-	return Interval{SomeSeconds: to.UnixNano() - from.UnixNano(), precision: GoPrecision}
+	return Interval{SomeSeconds: to.UnixNano() - from.UnixNano(), precision: IntervalGoPrecision}
 }
 
 // DiffExtended is similar to Diff but calculates difference in months, days & nanoseconds instead of just nanoseconds (=to-from).
@@ -236,7 +234,7 @@ func DiffExtended(from, to time.Time) (i Interval) {
 	i.Days = int32(toDay - fromDay)
 
 	i.SomeSeconds = to.UnixNano() - i.AddTo(from).UnixNano()
-	i.precision = GoPrecision
+	i.precision = IntervalGoPrecision
 
 	return
 }
@@ -255,28 +253,28 @@ func SinceExtended(t time.Time) Interval {
 
 // NewInterval returns zero interval with specified precision p.
 func NewInterval(p uint8) Interval {
-	if p > maxPrecision {
-		p = maxPrecision
+	if p > IntervalMaxPrecision {
+		p = IntervalMaxPrecision
 	}
 	return Interval{precision: p}
 }
 
 // NewGoInterval returns zero interval with GoLang precision (= nanosecond).
 func NewGoInterval() Interval {
-	return Interval{0, 0, 0, GoPrecision}
+	return Interval{0, 0, 0, IntervalGoPrecision}
 }
 
 // NewPgInterval returns zero interval with PostgreSQL precision (= microsecond).
 func NewPgInterval() Interval {
-	return Interval{0, 0, 0, PgPrecision}
+	return Interval{0, 0, 0, IntervalPgPrecision}
 }
 
 // SetPrecision returns new interval with changed precision (and do appropriate recalculation).
 // Possible precision is 0..12 where 0 means second precision and 9 means nanosecond precision.
 // If passed p>12 it will be silently replaced with p=12.
 func (i Interval) SetPrecision(p uint8) Interval {
-	if p > maxPrecision {
-		p = maxPrecision
+	if p > IntervalMaxPrecision {
+		p = IntervalMaxPrecision
 	}
 	if p == i.precision {
 		return i
@@ -564,7 +562,7 @@ func (i Interval) NormalNanoseconds() int64 {
 
 // AddTo adds original Interval to given timestamp and return result.
 func (i Interval) AddTo(t time.Time) time.Time {
-	return t.AddDate(0, int(i.Months), int(i.Days)).Add(time.Duration(someSecondsChangePrecision(i.SomeSeconds, i.precision, NanosecondPrecision)))
+	return t.AddDate(0, int(i.Months), int(i.Days)).Add(time.Duration(someSecondsChangePrecision(i.SomeSeconds, i.precision, IntervalNanosecondPrecision)))
 }
 
 // SubFrom subtract original Interval from given timestamp and return result.

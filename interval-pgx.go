@@ -30,7 +30,7 @@ func (i *Interval) Scan(vr *pgx.ValueReader) error {
 	switch vr.Type().FormatCode {
 	case pgx.TextFormatCode:
 		var err error
-		if *i, err = ParseInterval(vr.ReadString(vr.Len()), PgPrecision); err != nil {
+		if *i, err = ParseInterval(vr.ReadString(vr.Len()), IntervalPgPrecision); err != nil {
 			return pgx.SerializationError(fmt.Sprintf("received invalid Interval string: %v", err.Error())) // It is hard cover this case with test
 		}
 	case pgx.BinaryFormatCode:
@@ -38,7 +38,7 @@ func (i *Interval) Scan(vr *pgx.ValueReader) error {
 			return pgx.SerializationError(fmt.Sprintf("received Interval with invalid length: %d", vr.Len())) // It is hard cover this case with test
 		}
 
-		i.precision = PgPrecision
+		i.precision = IntervalPgPrecision
 		i.SomeSeconds = vr.ReadInt64()
 		i.Days = vr.ReadInt32()
 		i.Months = vr.ReadInt32()
@@ -59,7 +59,7 @@ func (i Interval) Encode(w *pgx.WriteBuf, oid pgx.Oid) error {
 	}
 
 	w.WriteInt32(intervalLen)
-	w.WriteInt64(someSecondsChangePrecision(i.SomeSeconds, i.precision, PgPrecision))
+	w.WriteInt64(someSecondsChangePrecision(i.SomeSeconds, i.precision, IntervalPgPrecision))
 	w.WriteInt32(i.Days)
 	w.WriteInt32(i.Months)
 

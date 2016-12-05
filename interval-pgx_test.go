@@ -13,25 +13,25 @@ type intervalTestElement struct {
 }
 
 var intervalTests = []intervalTestElement{
-	{"SELECT '0'::INTERVAL", Interval{0, 0, 0, PgPrecision}, false},
-	{"SELECT '1 seconds'::INTERVAL", Interval{0, 0, 1e6, PgPrecision}, false},
-	{"SELECT '2 seconds'::INTERVAL", Interval{0, 0, 2e6, PgPrecision}, false},
-	{"SELECT '1 days'::INTERVAL", Interval{0, 1, 0, PgPrecision}, false},
-	{"SELECT '2 days'::INTERVAL", Interval{0, 2, 0, PgPrecision}, false},
-	{"SELECT '1 mons'::INTERVAL", Interval{1, 0, 0, PgPrecision}, false},
-	{"SELECT '2 mons'::INTERVAL", Interval{2, 0, 0, PgPrecision}, false},
-	{"SELECT '1 years'::INTERVAL", Interval{12, 0, 0, PgPrecision}, false},
-	{"SELECT '2 years'::INTERVAL", Interval{24, 0, 0, PgPrecision}, false},
-	{"SELECT '12'::INTERVAL", Interval{0, 0, 12e6, PgPrecision}, false},
-	{"SELECT '13:12'::INTERVAL", Interval{0, 0, (13*3600 + 12*60) * 1e6, PgPrecision}, false},
-	{"SELECT '14:13:12'::INTERVAL", Interval{0, 0, (14*3600 + 13*60 + 12) * 1e6, PgPrecision}, false},
-	{"SELECT '2 day 1 seconds'::INTERVAL", Interval{0, 2, 1e6, PgPrecision}, false},
-	{"SELECT '-2 day 1 seconds'::INTERVAL", Interval{0, -2, 1e6, PgPrecision}, false},
-	{"SELECT '2 day -1 seconds'::INTERVAL", Interval{0, 2, -1e6, PgPrecision}, false},
-	{"SELECT '3 year 2 day -1 seconds'::INTERVAL", Interval{3 * 12, 2, -1e6, PgPrecision}, false},
-	{"SELECT '-3 year 2 day -1 seconds'::INTERVAL", Interval{-3 * 12, 2, -1e6, PgPrecision}, false},
-	{"SELECT '-3 year 2 day -1.23456 seconds'::INTERVAL", Interval{-3 * 12, 2, -1234560, PgPrecision}, false},
-	{"SELECT '-3 year 2 day -1.234567 seconds'::INTERVAL", Interval{-3 * 12, 2, -1234567, PgPrecision}, false},
+	{"SELECT '0'::INTERVAL", Interval{0, 0, 0, IntervalPgPrecision}, false},
+	{"SELECT '1 seconds'::INTERVAL", Interval{0, 0, 1e6, IntervalPgPrecision}, false},
+	{"SELECT '2 seconds'::INTERVAL", Interval{0, 0, 2e6, IntervalPgPrecision}, false},
+	{"SELECT '1 days'::INTERVAL", Interval{0, 1, 0, IntervalPgPrecision}, false},
+	{"SELECT '2 days'::INTERVAL", Interval{0, 2, 0, IntervalPgPrecision}, false},
+	{"SELECT '1 mons'::INTERVAL", Interval{1, 0, 0, IntervalPgPrecision}, false},
+	{"SELECT '2 mons'::INTERVAL", Interval{2, 0, 0, IntervalPgPrecision}, false},
+	{"SELECT '1 years'::INTERVAL", Interval{12, 0, 0, IntervalPgPrecision}, false},
+	{"SELECT '2 years'::INTERVAL", Interval{24, 0, 0, IntervalPgPrecision}, false},
+	{"SELECT '12'::INTERVAL", Interval{0, 0, 12e6, IntervalPgPrecision}, false},
+	{"SELECT '13:12'::INTERVAL", Interval{0, 0, (13*3600 + 12*60) * 1e6, IntervalPgPrecision}, false},
+	{"SELECT '14:13:12'::INTERVAL", Interval{0, 0, (14*3600 + 13*60 + 12) * 1e6, IntervalPgPrecision}, false},
+	{"SELECT '2 day 1 seconds'::INTERVAL", Interval{0, 2, 1e6, IntervalPgPrecision}, false},
+	{"SELECT '-2 day 1 seconds'::INTERVAL", Interval{0, -2, 1e6, IntervalPgPrecision}, false},
+	{"SELECT '2 day -1 seconds'::INTERVAL", Interval{0, 2, -1e6, IntervalPgPrecision}, false},
+	{"SELECT '3 year 2 day -1 seconds'::INTERVAL", Interval{3 * 12, 2, -1e6, IntervalPgPrecision}, false},
+	{"SELECT '-3 year 2 day -1 seconds'::INTERVAL", Interval{-3 * 12, 2, -1e6, IntervalPgPrecision}, false},
+	{"SELECT '-3 year 2 day -1.23456 seconds'::INTERVAL", Interval{-3 * 12, 2, -1234560, IntervalPgPrecision}, false},
+	{"SELECT '-3 year 2 day -1.234567 seconds'::INTERVAL", Interval{-3 * 12, 2, -1234567, IntervalPgPrecision}, false},
 	{"SELECT 'string'::TEXT", Interval{}, true},
 	{"SELECT null::interval", Interval{}, true},
 }
@@ -119,7 +119,7 @@ func TestInterval_Encode(t *testing.T) {
 
 func TestInterval_Encode2(t *testing.T) {
 	rightPrefix := "Interval.Encode cannot encode into OID "
-	if rows, err := conn.Query("SELECT $1::INTEGER", Interval{1, 2, 3, PgPrecision}); err == nil || !strings.HasPrefix(err.Error(), rightPrefix) {
+	if rows, err := conn.Query("SELECT $1::INTEGER", Interval{1, 2, 3, IntervalPgPrecision}); err == nil || !strings.HasPrefix(err.Error(), rightPrefix) {
 		t.Errorf("expect '%v', got %v", rightPrefix, err)
 		rows.Close()
 	}

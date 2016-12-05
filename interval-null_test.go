@@ -13,9 +13,9 @@ type nullIntervalTestElement struct {
 }
 
 var nullIntervalTests = []nullIntervalTestElement{
-	{"SELECT '3 years 2 days 12:34'::INTERVAL", NullInterval{Interval{3 * 12, 2, (12*3600 + 34*60) * 1e6, PgPrecision}, true}, false},
+	{"SELECT '3 years 2 days 12:34'::INTERVAL", NullInterval{Interval{3 * 12, 2, (12*3600 + 34*60) * 1e6, IntervalPgPrecision}, true}, false},
 	{"SELECT 'string'::TEXT", NullInterval{}, true},
-	{"SELECT null::interval", NullInterval{Interval{0, 0, 0, PgPrecision}, false}, false},
+	{"SELECT null::interval", NullInterval{Interval{0, 0, 0, IntervalPgPrecision}, false}, false},
 }
 
 func testNullInterval_Scan(t *testing.T) {
@@ -101,7 +101,7 @@ func TestNullInterval_Encode(t *testing.T) {
 
 func TestNullInterval_Encode2(t *testing.T) {
 	rightPrefix := "NullInterval.Encode cannot encode into OID "
-	if rows, err := conn.Query("SELECT $1::INTEGER", NullInterval{Interval{1, 2, 3, PgPrecision}, true}); err == nil || !strings.HasPrefix(err.Error(), rightPrefix) {
+	if rows, err := conn.Query("SELECT $1::INTEGER", NullInterval{Interval{1, 2, 3, IntervalPgPrecision}, true}); err == nil || !strings.HasPrefix(err.Error(), rightPrefix) {
 		t.Errorf("expect '%v', got %v", rightPrefix, err)
 		rows.Close()
 	}
