@@ -1,19 +1,17 @@
-package interval
+package pgtypes
 
 import (
 	"errors"
-	"github.com/apaxa-io/mathhelper"
-	"github.com/apaxa-io/strconvhelper"
-	"github.com/apaxa-io/stringshelper"
+	"github.com/apaxa-go/helper/mathh"
+	"github.com/apaxa-go/helper/strconvh"
+	"github.com/apaxa-go/helper/stringsh"
+	"github.com/apaxa-go/helper/timeh"
 	"regexp"
-	"strconv"
 	"strings"
 	"time"
 )
 
-// TODO move to parent package?
-// TODO implement NullInterval
-
+// Predefined precisions.
 const (
 	SecondPrecision      = 0
 	MillisecondPrecision = 3
@@ -21,14 +19,13 @@ const (
 	NanosecondPrecision  = 9
 	PicosecondPrecision  = 12
 	GoPrecision          = NanosecondPrecision
-	PostgreSQLPrecision  = MicrosecondPrecision
+	PgPrecision          = MicrosecondPrecision
 	maxPrecision         = 12
-	defaultPrecision     = GoPrecision
 )
 
 // RE for parse interval in postgres style specification.
 // http://www.postgresql.org/docs/9.4/interactive/datatype-datetime.html#DATATYPE-INTERVAL-OUTPUT
-var re = regexp.MustCompile(`^(?:([+-]?[0-9]+) year)? ?(?:([+-]?[0-9]+) mons)? ?(?:([+-]?[0-9]+) days)? ?(?:([+-])?([0-9]+):([0-9]+):([0-9]+)(?:,|.([0-9]+))?)?$`)
+var re = regexp.MustCompile(`^(?:([+-]?[0-9]+) years?)? ?(?:([+-]?[0-9]+) mons?)? ?(?:([+-]?[0-9]+) days?)? ?(?:([+-])?([0-9]+):([0-9]+):([0-9]+)(?:,|.([0-9]+))?)?$`)
 
 // Interval represent time interval in Postgres-compatible way.
 // It consists of 3 public fields:
@@ -40,7 +37,7 @@ var re = regexp.MustCompile(`^(?:([+-]?[0-9]+) year)? ?(?:([+-]?[0-9]+) mons)? ?
 // Precision can be from [0; 12] where 0 means that SomeSeconds is seconds and 12 means that SomeSeconds is picoseconds.
 // If Interval created without calling constructor when it has 0 precision (i.e. SomeSeconds is just seconds).
 // If Interval created with calling constructor and its documentation does not say another when it has precision = 9 (i.e. SomeSeconds is nanoseconds). This is because default Go time type has nanosecond precision.
-// If interval is used to store PostgreSQL Interval when recommended precision is 6 (microsecond) because PostgreSQL use microsecond.
+// If interval is used to store PostgreSQL Interval when recommended precision is 6 (microsecond) because PostgreSQL use microsecond precision.
 // This type is similar to Postgres interval data type.
 // Value from one field is never automatically translated to value of another field, so <60*60*24 seconds> != <1 days> and so on.
 // This is because of:
@@ -53,68 +50,65 @@ type Interval struct {
 	precision   uint8
 }
 
-// Nanosecond returns new Interval equal to 1 picosecond.
+// Picosecond returns new Interval equal to 1 picosecond.
 // This constructor return interval with precision = 12 (picosecond).
 func Picosecond() Interval {
 	return Interval{SomeSeconds: 1, precision: PicosecondPrecision}
 }
 
-// Nanosecond returns new Interval equal to 1 nanosecond
+// Nanosecond returns new Interval equal to 1 nanosecond.
 func Nanosecond() Interval {
 	return Interval{SomeSeconds: 1, precision: GoPrecision}
 }
 
-// Microsecond returns new Interval equal to 1 microsecond
+// Microsecond returns new Interval equal to 1 microsecond.
 func Microsecond() Interval {
-	return Interval{SomeSeconds: NanosecsInMicrosec, precision: GoPrecision}
+	return Interval{SomeSeconds: timeh.NanosecsInMicrosec, precision: GoPrecision}
 }
 
-// Millisecond returns new Interval equal to 1 millisecond
+// Millisecond returns new Interval equal to 1 millisecond.
 func Millisecond() Interval {
-	return Interval{SomeSeconds: NanosecsInMillisec, precision: GoPrecision}
+	return Interval{SomeSeconds: timeh.NanosecsInMillisec, precision: GoPrecision}
 }
 
-// Second returns new Interval equal to 1 second
+// Second returns new Interval equal to 1 second.
 func Second() Interval {
-	return Interval{SomeSeconds: NanosecsInSec, precision: GoPrecision}
+	return Interval{SomeSeconds: timeh.NanosecsInSec, precision: GoPrecision}
 }
 
-// Minute returns new Interval equal to 1 minute (60 seconds)
+// Minute returns new Interval equal to 1 minute (60 seconds).
 func Minute() Interval {
-	return Interval{SomeSeconds: NanosecsInSec * SecsInMin, precision: GoPrecision}
+	return Interval{SomeSeconds: timeh.NanosecsInSec * timeh.SecsInMin, precision: GoPrecision}
 }
 
-// Hour returns new Interval equal to 1 hour (3600 seconds)
+// Hour returns new Interval equal to 1 hour (3600 seconds).
 func Hour() Interval {
-	return Interval{SomeSeconds: NanosecsInSec * SecsInHour, precision: GoPrecision}
+	return Interval{SomeSeconds: timeh.NanosecsInSec * timeh.SecsInHour, precision: GoPrecision}
 }
 
-// Day returns new Interval equal to 1 day
+// Day returns new Interval equal to 1 day.
 func Day() Interval {
 	return Interval{Days: 1, precision: GoPrecision}
 }
 
-// Month returns new Interval equal to 1 month
+// Month returns new Interval equal to 1 month.
 func Month() Interval {
 	return Interval{Months: 1, precision: GoPrecision}
 }
 
-// Year returns new Interval equal to 1 year (12 months)
+// Year returns new Interval equal to 1 year (12 months).
 func Year() Interval {
-	return Interval{Months: MonthsInYear, precision: GoPrecision}
+	return Interval{Months: timeh.MonthsInYear, precision: GoPrecision}
 }
 
-// Parse parses incoming string and extract interval with requested precision p.
+// ParseInterval parses incoming string and extract interval with requested precision p.
 // Format is postgres style specification for interval output format.
 // Examples:
 // 	-1 year 2 mons -3 days 04:05:06.789
 // 	1 mons
 // 	2 year -34:56:78
 // 	00:00:00
-func Parse(s string, p uint8) (i Interval, err error) {
-	//TODO string of 1-3 spaces are parse ok
-	//TODO add check for overflow
-
+func ParseInterval(s string, p uint8) (i Interval, err error) {
 	if p > maxPrecision {
 		i.precision = maxPrecision
 	} else {
@@ -127,83 +121,86 @@ func Parse(s string, p uint8) (i Interval, err error) {
 		return
 	}
 
-	var ti int64
+	var ti32 int32
 
 	// Store as months:
 
 	// years
 	if parts[1] != "" {
-		ti, err = strconv.ParseInt(parts[1], 10, 32)
+		ti32, err = strconvh.ParseInt32(parts[1])
 		if err != nil {
 			return
 		}
-		i.Months = int32(ti) * MonthsInYear
+		i.Months = ti32 * timeh.MonthsInYear
 	}
 
 	// months
 	if parts[2] != "" {
-		ti, err = strconv.ParseInt(parts[2], 10, 32)
+		ti32, err = strconvh.ParseInt32(parts[2])
 		if err != nil {
 			return
 		}
-		i.Months += int32(ti)
+		i.Months += ti32
 	}
 
 	// Store as days:
 
 	// days
 	if parts[3] != "" {
-		ti, err = strconv.ParseInt(parts[3], 10, 32)
+		ti32, err = strconvh.ParseInt32(parts[3])
 		if err != nil {
 			return
 		}
-		i.Days = int32(ti)
+		i.Days = ti32
 	}
+
+	var ti64 int64
 
 	// Store as seconds:
 
-	negativeTime := parts[4] == "-" // TODO problem with MinInt64 because scanning as positive
+	negativeTime := parts[4] == "-"
 
 	// hours
 	if parts[5] != "" {
-		ti, err = strconv.ParseInt(parts[5], 10, 64)
+		ti64, err = strconvh.ParseInt64(parts[5])
 		if err != nil {
 			return
 		}
-		i.SomeSeconds = ti // Now somesecs contains hours
+		i.SomeSeconds = ti64 // Now SomeSeconds contains hours
 	}
-	i.SomeSeconds *= MinsInHour // Now somesecs contains minutes
+	i.SomeSeconds *= timeh.MinsInHour // Now SomeSeconds contains minutes
 
 	// minutes
 	if parts[6] != "" {
-		ti, err = strconv.ParseInt(parts[6], 10, 64)
+		ti64, err = strconvh.ParseInt64(parts[6])
 		if err != nil {
 			return
 		}
-		i.SomeSeconds += ti
+		i.SomeSeconds += ti64
 	}
-	i.SomeSeconds *= SecsInMin // Now somesecs contains seconds
+	i.SomeSeconds *= timeh.SecsInMin // Now SomeSeconds contains seconds
 
 	// seconds
+	// TODO possible overflow because of storing negative values as positive (MinInt64).
 	if parts[7] != "" {
-		ti, err = strconv.ParseInt(parts[7], 10, 64)
+		ti64, err = strconvh.ParseInt64(parts[7])
 		if err != nil {
 			return
 		}
-		i.SomeSeconds += ti
+		i.SomeSeconds += ti64
 	}
 
-	i.SomeSeconds *= mathhelper.PowInt64(10, int64(p)) // Now someseconds contains required precision units
+	i.SomeSeconds *= mathh.PowInt64(10, int64(p)) // Now SomeSeconds contains units with required precision
 
 	if parts[8] != "" {
 		if len(parts[8]) < int(p) {
-			parts[8] = stringshelper.PadRightWithByte(parts[8], '0', int(p))
+			parts[8] = stringsh.PadRightWithByte(parts[8], '0', int(p))
 		}
-		ti, err = strconv.ParseInt(parts[8][:p], 10, 64)
+		ti64, err = strconvh.ParseInt64(parts[8][:p])
 		if err != nil {
-			return
+			return // It is impossible to cover this case because of RegExp and limits on p (p<Digits(MaxInt64))
 		}
-		i.SomeSeconds += ti
+		i.SomeSeconds += ti64
 
 		if len(parts[8]) > int(p) && parts[8][int(p)] >= '5' { // Round-to-upper if needed
 			i.SomeSeconds++
@@ -235,7 +232,7 @@ func DiffExtended(from, to time.Time) (i Interval) {
 	fromYear, fromMonth, fromDay := from.Date()
 	toYear, toMonth, toDay := to.Date()
 
-	i.Months = int32((toYear-fromYear)*MonthsInYear + int(toMonth-fromMonth))
+	i.Months = int32((toYear-fromYear)*timeh.MonthsInYear + int(toMonth-fromMonth))
 	i.Days = int32(toDay - fromDay)
 
 	i.SomeSeconds = to.UnixNano() - i.AddTo(from).UnixNano()
@@ -244,19 +241,19 @@ func DiffExtended(from, to time.Time) (i Interval) {
 	return
 }
 
-// Since returns elapsed time since given timestamp as Interval (=Diff(t, time.New())
+// Since returns elapsed time since given timestamp as Interval (=Diff(t, time.New()).
 // Result always have months & days parts set to zero.
 func Since(t time.Time) Interval {
 	return Diff(t, time.Now())
 }
 
-// SinceExtended returns elapsed time since given timestamp as Interval (=DiffExtended(t, time.New())
+// SinceExtended returns elapsed time since given timestamp as Interval (=DiffExtended(t, time.New()).
 // Result may have non-zero months & days parts.
 func SinceExtended(t time.Time) Interval {
 	return DiffExtended(t, time.Now().In(t.Location()))
 }
 
-// New returns zero interval with specified precision p
+// NewInterval returns zero interval with specified precision p.
 func NewInterval(p uint8) Interval {
 	if p > maxPrecision {
 		p = maxPrecision
@@ -264,17 +261,17 @@ func NewInterval(p uint8) Interval {
 	return Interval{precision: p}
 }
 
-// New returns zero interval with GoLang precision (= nanosecond)
+// NewGoInterval returns zero interval with GoLang precision (= nanosecond).
 func NewGoInterval() Interval {
 	return Interval{0, 0, 0, GoPrecision}
 }
 
-// New returns zero interval with PostgreSQL precision (= microsecond)
+// NewPgInterval returns zero interval with PostgreSQL precision (= microsecond).
 func NewPgInterval() Interval {
-	return Interval{0, 0, 0, PostgreSQLPrecision}
+	return Interval{0, 0, 0, PgPrecision}
 }
 
-// SetPrecision change interval precision and do appropriate stored value recalculation.
+// SetPrecision returns new interval with changed precision (and do appropriate recalculation).
 // Possible precision is 0..12 where 0 means second precision and 9 means nanosecond precision.
 // If passed p>12 it will be silently replaced with p=12.
 func (i Interval) SetPrecision(p uint8) Interval {
@@ -293,7 +290,7 @@ func (i Interval) Precision() uint8 {
 }
 
 // String returns string representation of interval.
-// Output format is the same as for Parse
+// Output format is the same as for Parse.
 func (i Interval) String() string {
 	if i.Months == 0 && i.Days == 0 && i.SomeSeconds == 0 {
 		return "00:00:00"
@@ -304,13 +301,13 @@ func (i Interval) String() string {
 
 	str := ""
 	if y != 0 {
-		str += strconvhelper.FormatInt32(y) + " year "
+		str += strconvh.FormatInt32(y) + " year "
 	}
 	if mon != 0 {
-		str += strconvhelper.FormatInt32(mon) + " mons "
+		str += strconvh.FormatInt32(mon) + " mons "
 	}
 	if i.Days != 0 {
-		str += strconvhelper.FormatInt32(i.Days) + " days "
+		str += strconvh.FormatInt32(i.Days) + " days "
 	}
 
 	if i.SomeSeconds != 0 {
@@ -319,10 +316,10 @@ func (i Interval) String() string {
 			i.SomeSeconds *= -1
 		}
 
-		tmp := mathhelper.PowInt64(10, int64(i.precision))
+		tmp := mathh.PowInt64(10, int64(i.precision))
 		h := i.NormalHours()
 		m := i.NormalMinutes()
-		f := i.SomeSeconds % (tmp * SecsInMin)
+		f := i.SomeSeconds % (tmp * timeh.SecsInMin)
 		s := f / tmp
 		f -= s * tmp
 
@@ -330,12 +327,12 @@ func (i Interval) String() string {
 			str += "-"
 		}
 
-		str += stringshelper.PadLeftWithByte(strconvhelper.FormatInt64(h), '0', 2) + ":" +
-			stringshelper.PadLeftWithByte(strconvhelper.FormatInt8(m), '0', 2) + ":" +
-			stringshelper.PadLeftWithByte(strconvhelper.FormatInt64(s), '0', 2)
+		str += stringsh.PadLeftWithByte(strconvh.FormatInt64(h), '0', 2) + ":" +
+			stringsh.PadLeftWithByte(strconvh.FormatInt64(m), '0', 2) + ":" +
+			stringsh.PadLeftWithByte(strconvh.FormatInt64(s), '0', 2)
 		if f != 0 {
 			str += "." + strings.TrimRight(
-				stringshelper.PadLeftWithByte(strconvhelper.FormatInt64(f), '0', int(i.precision)),
+				stringsh.PadLeftWithByte(strconvh.FormatInt64(f), '0', int(i.precision)),
 				"0",
 			)
 		}
@@ -351,7 +348,7 @@ func (i Interval) String() string {
 // and number of minutes in day (usually 1440) because of converting months and days parts of original Interval to time.Duration nanoseconds.
 // Warning: this method is inaccuracy because in real life daysInMonth & minutesInDay vary and depends on relative timestamp.
 func (i Interval) Duration(daysInMonth uint8, minutesInDay uint32) time.Duration {
-	return time.Duration((int64(i.Months)*int64(daysInMonth)+int64(i.Days))*int64(minutesInDay)*mathhelper.PowInt64(10, int64(i.precision))*SecsInMin + i.SomeSeconds)
+	return time.Duration((int64(i.Months)*int64(daysInMonth)+int64(i.Days))*int64(minutesInDay)*mathh.PowInt64(10, int64(i.precision))*timeh.SecsInMin + i.SomeSeconds)
 }
 
 // someSecondsChangePrecision recalculates s (with precision from) to precision to and return result.
@@ -359,14 +356,12 @@ func (i Interval) Duration(daysInMonth uint8, minutesInDay uint32) time.Duration
 //	it can be read as convert 1 000 000 microseconds (1e-6 seconds) to milliseconds (1e-3).
 func someSecondsChangePrecision(s int64, from, to uint8) int64 {
 	if to >= from {
-		return s * mathhelper.PowInt64(10, int64(to-from))
+		return s * mathh.PowInt64(10, int64(to-from))
 	}
-	return mathhelper.DivideRoundFixInt64(s, mathhelper.PowInt64(10, int64(from-to)))
+	return mathh.DivideRoundFixInt64(s, mathh.PowInt64(10, int64(from-to)))
 }
 
-// Add adds given Interval to original Interval.
-// Original Interval will be changed.
-// TODO 'will be changed'?
+// Add returns i+add.
 func (i Interval) Add(add Interval) Interval {
 	i.Months += add.Months
 	i.Days += add.Days
@@ -374,9 +369,7 @@ func (i Interval) Add(add Interval) Interval {
 	return i
 }
 
-// Sub subtracts given Interval from original Interval.
-// Original Interval will be changed.
-// TODO 'will be changed'?
+// Sub returns i-sub.
 func (i Interval) Sub(sub Interval) Interval {
 	i.Months -= sub.Months
 	i.Days -= sub.Days
@@ -384,37 +377,108 @@ func (i Interval) Sub(sub Interval) Interval {
 	return i
 }
 
-// Mul multiples interval by mul. Each part of Interval multiples independently.
-// Original Interval will be changed.
-// TODO 'will be changed'?
+// Mul returns interval i multiplied by mul. Each part of Interval multiples independently.
 func (i Interval) Mul(mul int64) Interval {
 	i.Months, i.Days, i.SomeSeconds = int32(int64(i.Months)*mul), int32(int64(i.Days)*mul), int64(int64(i.SomeSeconds)*mul)
 	return i
 }
 
-// Div divides interval by mul. Each part of Interval divides independently.
+// Div divides interval by mul and returns result. Each part of Interval divides independently.
 // Round rule: 0.4=>0 ; 0.5=>1 ; 0.6=>1 ; -0.4=>0 ; -0.5=>-1 ; -0.6=>-1
-// Original Interval will be changed.
-// TODO 'will be changed'?
 func (i Interval) Div(div int64) Interval {
-	i.Months = int32(mathhelper.DivideRoundFixInt64(int64(i.Months), div))
-	i.Days = int32(mathhelper.DivideRoundFixInt64(int64(i.Days), div))
-	i.SomeSeconds = mathhelper.DivideRoundFixInt64(i.SomeSeconds, div)
+	i.Months = int32(mathh.DivideRoundFixInt64(int64(i.Months), div))
+	i.Days = int32(mathh.DivideRoundFixInt64(int64(i.Days), div))
+	i.SomeSeconds = mathh.DivideRoundFixInt64(i.SomeSeconds, div)
 	return i
+}
+
+// SafePrec returns minimal precision which can be used for current Interval without data loss.
+// Examples:
+// 	10 seconds => 0 (second precision, can not be less)
+//	10 milliseconds => 2 (2 digit after decimal point precision)
+// 	123 microseconds => 6 (microsecond precision)
+func (i Interval) SafePrec() uint8 {
+	ss := i.SomeSeconds
+	p := i.precision
+	for p > 0 && ss%10 == 0 {
+		ss /= 10
+		p--
+	}
+	return p
 }
 
 // In counts how many i contains in i2 (=i2/i).
 // Round rule: 0.4=>0 ; 0.5=>1 ; 0.6=>1 ; -0.4=>0 ; -0.5=>-1 ; -0.6=>-1
-// TODO A lot of overflows
 func (i Interval) In(i2 Interval) int64 {
-	iv := (int64(i.Months)*DaysInMonth+int64(i.Days))*SecsInDay*mathhelper.PowInt64(10, int64(i.precision)) + i.SomeSeconds
-	i2v := (int64(i2.Months)*DaysInMonth+int64(i2.Days))*SecsInDay*mathhelper.PowInt64(10, int64(i2.precision)) + i2.SomeSeconds
-	if i.precision > i2.precision {
-		i2v = someSecondsChangePrecision(i2v, i2.precision, i.precision)
-	} else {
-		iv = someSecondsChangePrecision(iv, i.precision, i2.precision)
+	prec := mathh.Max2Uint8(i.SafePrec(), i2.SafePrec())
+	pow := mathh.PowInt64(10, int64(prec))
+
+	iv := (int64(i.Months)*timeh.DaysInMonth + int64(i.Days)) * timeh.SecsInDay
+	iv *= pow
+	iv += someSecondsChangePrecision(i.SomeSeconds, i.precision, prec)
+
+	i2v := (int64(i2.Months)*timeh.DaysInMonth + int64(i2.Days)) * timeh.SecsInDay
+	i2v *= pow
+	i2v += someSecondsChangePrecision(i2.SomeSeconds, i2.precision, prec)
+
+	return mathh.DivideRoundFixInt64(i2v, iv)
+}
+
+// Cmp returns compare two Intervals. ok indicates is i and i2 comparable.
+// sign means the following:
+// 	sign<0 => i<i2
+// 	sign=0 => i=i2
+// 	sign>0 => i>i2
+func (i Interval) Cmp(i2 Interval) (sign int, ok bool) {
+	var mSign, dSign, sSign int
+
+	switch {
+	case i.Months < i2.Months:
+		mSign = -1
+	case i.Months > i2.Months:
+		mSign = 1
 	}
-	return mathhelper.DivideRoundFixInt64(i2v, iv)
+
+	switch {
+	case i.Days < i2.Days:
+		dSign = -1
+	case i.Days > i2.Days:
+		dSign = 1
+	}
+
+	// Compare SomeSecond. Requirements: smallP<=bigP
+	ssCmp := func(v1 int64, smallP uint8, v2 int64, bigP uint8) int {
+		tmp := mathh.PowInt64(10, int64(bigP-smallP))
+		switch {
+		case v1 < v2/tmp:
+			return -1
+		case v1 > v2/tmp:
+			return 1
+		default:
+			return int(mathh.SignInt64(v2 % tmp))
+		}
+	}
+	if i.precision <= i2.precision {
+		sSign = ssCmp(i.SomeSeconds, i.precision, i2.SomeSeconds, i2.precision)
+	} else {
+		sSign = -ssCmp(i2.SomeSeconds, i2.precision, i.SomeSeconds, i.precision)
+	}
+
+	// Check if Intervals comparable
+	if (mSign < 0 || dSign < 0 || sSign < 0) && (mSign > 0 || dSign > 0 || sSign > 0) {
+		return 0, false
+	}
+
+	sign = mSign + dSign + sSign
+
+	switch {
+	case sign < -1:
+		sign = -1
+	case sign > 1:
+		sign = 1
+	}
+
+	return sign, true
 }
 
 // Comparable returns true only if it is possible to compare Intervals.
@@ -424,84 +488,49 @@ func (i Interval) In(i2 Interval) int64 {
 //   2) all parts of "B" are less or equal to relative parts of "A".
 // In the other words, it is impossible to compare "30 days"-Interval with "1 month"-Interval.
 func (i Interval) Comparable(i2 Interval) bool {
-	return i.LessOrEqual(i2) || i.GreaterOrEqual(i2)
+	_, ok := i.Cmp(i2)
+	return ok
 }
 
 // Equal compare original Interval with given for full equality part by part.
 func (i Interval) Equal(i2 Interval) bool {
-	if i.Months != i2.Months || i.Days != i2.Days {
-		return false
-	}
-	if (i.precision == i2.precision && i.SomeSeconds == i2.SomeSeconds) || (i.SomeSeconds == 0 && i2.SomeSeconds == 0) {
-		return true
-	}
-	if i.precision > i2.precision {
-		tmp := mathhelper.PowInt64(10, int64(i.precision-i2.precision))
-		return i.SomeSeconds%tmp == 0 && i.SomeSeconds/tmp == i2.SomeSeconds
-	} else {
-		tmp := mathhelper.PowInt64(10, int64(i2.precision-i.precision))
-		return i2.SomeSeconds%tmp == 0 && i2.SomeSeconds/tmp == i.SomeSeconds
-	}
+	sign, ok := i.Cmp(i2)
+	return ok && sign == 0
 }
 
 // LessOrEqual returns true if all parts of original Interval are less or equal to relative parts of i2.
 func (i Interval) LessOrEqual(i2 Interval) bool {
-	if i.Months > i2.Months || i.Days > i2.Days {
-		return false
-	}
-	if (i.precision == i2.precision && i.SomeSeconds <= i2.SomeSeconds) || (i.SomeSeconds == 0 && i2.SomeSeconds == 0) {
-		return true
-	}
-	if i.precision > i2.precision {
-		tmp := mathhelper.PowInt64(10, int64(i.precision-i2.precision))
-		switch {
-		case i.SomeSeconds/tmp < i2.SomeSeconds:
-			return true
-		case i.SomeSeconds/tmp > i2.SomeSeconds:
-			return false
-		default:
-			return i.SomeSeconds%tmp <= 0
-		}
-	} else {
-		tmp := mathhelper.PowInt64(10, int64(i2.precision-i.precision))
-		switch {
-		case i.SomeSeconds < i2.SomeSeconds/tmp:
-			return true
-		case i.SomeSeconds > i2.SomeSeconds/tmp:
-			return false
-		default:
-			return i2.SomeSeconds%tmp <= 0
-		}
-	}
+	sign, ok := i.Cmp(i2)
+	return ok && sign <= 0
 }
 
 // Less returns true if at least one part of original Interval is less then relative part of i2 and all other parts of original Interval are less or equal to relative parts of i2.
 func (i Interval) Less(i2 Interval) bool {
-	return !i.Equal(i2) && i.LessOrEqual(i2)
+	sign, ok := i.Cmp(i2)
+	return ok && sign < 0
 }
 
 // GreaterOrEqual returns true if all parts of original Interval are greater or equal to relative parts of i2.
 func (i Interval) GreaterOrEqual(i2 Interval) bool {
-	//return i.Months >= i2.Months && i.Days >= i2.Days && i.SomeSeconds >= i2.SomeSeconds
-	return i2.LessOrEqual(i)
+	sign, ok := i.Cmp(i2)
+	return ok && sign >= 0
 }
 
 // Greater returns true if at least one part of original Interval is greater then relative part of i2 and all other parts of original Interval are greater or equal to relative parts of i2.
 func (i Interval) Greater(i2 Interval) bool {
-	return !i.Equal(i2) && i.GreaterOrEqual(i2)
+	sign, ok := i.Cmp(i2)
+	return ok && sign > 0
 }
 
 // NormalYears return number of years in month part (as i.Months / 12).
 func (i Interval) NormalYears() int32 {
-	// TODO what about sign?
-	return i.Months / MonthsInYear
+	return i.Months / timeh.MonthsInYear
 }
 
 // NormalMonths return number of months in month part after subtracting NormalYears*12 (as i.Months % 12).
 // Examples: if .Months = 11 then NormalMonths = 11, but if .Months = 13 then NormalMonths = 1.
 func (i Interval) NormalMonths() int32 {
-	// TODO what about sign?
-	return i.Months % MonthsInYear
+	return i.Months % timeh.MonthsInYear
 }
 
 // NormalDays just returns Days part.
@@ -511,27 +540,26 @@ func (i Interval) NormalDays() int32 {
 
 // NormalHours returns number of hours in seconds part.
 func (i Interval) NormalHours() int64 {
-	// TODO what about sign?
-	return int64(i.SomeSeconds / (mathhelper.PowInt64(10, int64(i.precision)) * SecsInHour))
+	pow := mathh.PowInt64(10, int64(i.precision))
+	return i.SomeSeconds / (pow * timeh.SecsInHour)
 }
 
 // NormalMinutes returns number of hours in seconds part after subtracting NormalHours.
-func (i Interval) NormalMinutes() int8 {
-	// TODO what about sign?
-	tmp := mathhelper.PowInt64(10, int64(i.precision))
-	return int8((i.SomeSeconds - int64(i.NormalHours())*tmp*SecsInHour) / (tmp * SecsInMin))
+func (i Interval) NormalMinutes() int64 {
+	pow := mathh.PowInt64(10, int64(i.precision))
+	return (i.SomeSeconds - i.NormalHours()*pow*timeh.SecsInHour) / (pow * timeh.SecsInMin)
 }
 
 // NormalSeconds returns number of seconds in seconds part after subtracting NormalHours*3600 and NormalMinutes*60 (as i.Seconds % 60).
-func (i Interval) NormalSeconds() int8 {
-	// TODO what about sign?
-	return int8((i.SomeSeconds / mathhelper.PowInt64(10, int64(i.precision))) % SecsInMin)
+func (i Interval) NormalSeconds() int64 {
+	pow := mathh.PowInt64(10, int64(i.precision))
+	return (i.SomeSeconds / pow) % timeh.SecsInMin
 }
 
 // NormalNanoseconds returns number of nanoseconds in fraction part of seconds part.
-func (i Interval) NormalNanoseconds() int32 {
-	// TODO what about sign?
-	return int32(i.SomeSeconds % mathhelper.PowInt64(10, int64(i.precision)))
+func (i Interval) NormalNanoseconds() int64 {
+	pow := mathh.PowInt64(10, int64(i.precision))
+	return i.SomeSeconds % pow
 }
 
 // AddTo adds original Interval to given timestamp and return result.
@@ -541,5 +569,5 @@ func (i Interval) AddTo(t time.Time) time.Time {
 
 // SubFrom subtract original Interval from given timestamp and return result.
 func (i Interval) SubFrom(t time.Time) time.Time {
-	return i.Mul(-1).AddTo(t) // TODO possible overflow (MinInt64)
+	return i.Mul(-1).AddTo(t)
 }

@@ -1,12 +1,14 @@
-package interval
+package pgtypes
 
 import (
-	"github.com/apaxa-io/mathhelper"
+	"github.com/apaxa-go/helper/mathh"
+	"github.com/apaxa-go/helper/timeh"
 	"math"
 	"testing"
 	"time"
 )
 
+// TODO - add more direct tests
 // TODO - make tests for the following:
 /*
 When adding an interval value to (or subtracting an interval value from) a timestamp with time zone value, the days component advances or decrements the date of the timestamp with time zone by the indicated number of days. Across daylight saving time changes (when the session time zone is set to a time zone that recognizes DST), this means interval '1 day' does not necessarily equal interval '24 hours'. For example, with the session time zone set to CST7CDT, timestamp with time zone '2005-04-02 12:00-07' + interval '1 day' will produce timestamp with time zone '2005-04-03 12:00-06', while adding interval '24 hours' to the same initial timestamp with time zone produces timestamp with time zone '2005-04-03 13:00-06', as there is a change in daylight saving time at 2005-04-03 02:00 in time zone CST7CDT.
@@ -30,175 +32,47 @@ Result: 4 mons
 
 func TestParse(t *testing.T) {
 	type testElement struct {
-		s   string
-		i   Interval
-		err bool
+		s    string
+		prec uint8
+		i    Interval
+		err  bool
 	}
 
 	test := []testElement{
-		// 0
-		{
-			s:   "-1 year -2 mons +3 days -04:05:06",
-			i:   Interval{-14, 3, -14706 * 1e9, NanosecondPrecision},
-			err: false,
-		},
-
-		// 1
-		{
-			s:   "-1 year 2 mons -3 days 04:05:06.789",
-			i:   Interval{-10, -3, 14706789 * 1e6, NanosecondPrecision},
-			err: false,
-		},
-
-		// 2
-		{
-			s:   "",
-			i:   Interval{0, 0, 0, NanosecondPrecision},
-			err: false,
-		},
-
-		// 3
-		{
-			s:   "1 mons",
-			i:   Interval{1, 0, 0, NanosecondPrecision},
-			err: false,
-		},
-
-		// 4
-		{
-			s:   "2 year -34:56:78",
-			i:   Interval{24, 0, -125838 * 1e9, NanosecondPrecision},
-			err: false,
-		},
-
-		// 5
-		{
-			s:   "00:00:00",
-			i:   Interval{0, 0, 0, NanosecondPrecision},
-			err: false,
-		},
-
-		// 6
-		{
-			s:   "00:00",
-			err: true,
-		},
-
-		// 7
-		{
-			s:   "year mons days",
-			err: true,
-		},
-
-		// 8
-		{
-			s:   "0 year 0 mons 0 days 00:00:00",
-			i:   Interval{0, 0, 0, NanosecondPrecision},
-			err: false,
-		},
-
-		// 9
-		{
-			s:   "1.5 year",
-			err: true,
-		},
-
-		// 10
-		{
-			s:   "1,5 year",
-			err: true,
-		},
-
-		// 11
-		{
-			s:   "99999999999 year -2 mons +3 days -04:05:06",
-			err: true,
-		},
-
-		// 12
-		{
-			s:   "9 year 9999999999 mons +3 days -04:05:06",
-			err: true,
-		},
-
-		// 13
-		{
-			s:   "9 year -2 mons +99999999999 days -04:05:06",
-			err: true,
-		},
-
-		// 14
-		{
-			s:   "9 year -2 mons +9 days 040506",
-			err: true,
-		},
-
-		// 15
-		// TODO (now this case is valid as translated-to-seconds fields parsed as float64 (but without fraction part)
-		/*testElement{
-			s:   "9 year -2 mons +9 days 9999999999999999999999999:05:06",
-			err: true,
-		},*/
-
-		// 16
-		// TODO (now this case is valid as translated-to-seconds fields parsed as float64 (but without fraction part)
-		/*testElement{
-			s:   "9 year -2 mons +9 days 04:9999999999999999999999999:06",
-			err: true,
-		},*/
-
-		// 17
-		{
-			s:   "9 year -2 mons +9 days 04:06:99999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999",
-			err: true,
-		},
-
-		// 18
-		{
-			s:   "2147483647 mons 2147483647 days 00:00:00",
-			i:   Interval{2147483647, 2147483647, 0, NanosecondPrecision},
-			err: false,
-		},
-
-		// 18
-		{
-			s:   "-2147483648 mons -2147483648 days 00:00:00",
-			i:   Interval{-2147483648, -2147483648, 0, NanosecondPrecision},
-			err: false,
-		},
-
+		{"-1 year -2 mons +3 days -04:05:06", MicrosecondPrecision, Interval{-14, 3, -14706 * 1e9, NanosecondPrecision}, false},
+		{"-1 year 2 mons -3 days 04:05:06.789", MicrosecondPrecision, Interval{-10, -3, 14706789 * 1e6, NanosecondPrecision}, false},
+		{"", MicrosecondPrecision, Interval{0, 0, 0, NanosecondPrecision}, false},
+		{"00:00", MicrosecondPrecision, Interval{}, true},
+		{"year mons days", MicrosecondPrecision, Interval{}, true},
+		{"1.5 year", MicrosecondPrecision, Interval{}, true},
+		{"1,5 year", MicrosecondPrecision, Interval{}, true},
+		{"99999999999 year -2 mons +3 days -04:05:06", MicrosecondPrecision, Interval{}, true},
+		{"9 year 9999999999 mons +3 days -04:05:06", MicrosecondPrecision, Interval{}, true},
+		{"9 year -2 mons +99999999999 days -04:05:06", MicrosecondPrecision, Interval{}, true},
+		{"9 year -2 mons +9 days 040506", MicrosecondPrecision, Interval{}, true},
+		{"9 year -2 mons +9 days 04:06:99999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999", MicrosecondPrecision, Interval{}, true},
 		//TODO waiting check overflow
-		/*// 19
-		testElement{
-			s: "2147483647 year 2147483647 mons 2147483647 days 00:00:00",
-			i: Interval{
-				Months:  2147483647,
-				Days:    2147483647,
-				Seconds: 0,
-			},
-			err: false,
-		},
-
+		//{"2147483647 year 2147483647 mons 2147483647 days 00:00:00", MicrosecondPrecision, Interval{2147483647, 2147483647, 0, MicrosecondPrecision}, false},
 		//-2147483648 to 2147483647
-
 		//TODO waiting fix spaces
-		// 9
-		/*
-			testElement{
-				s:   "   ",
-				err: true,
-			},
-		*/
+		//{"   ", MicrosecondPrecision, Interval{}, true},
+		{"1 year", 15, Interval{12, 0, 0, PicosecondPrecision}, false},
+		{"132428754353245897987092345345:00:00", MicrosecondPrecision, Interval{}, true},
+		{"00:132428754353245897987092345345:00", MicrosecondPrecision, Interval{}, true},
+		{"00:00:132428754353245897987092345345", MicrosecondPrecision, Interval{}, true},
+		{"00:00:00.132428754353245897987092345345", MillisecondPrecision, Interval{0, 0, 132, MillisecondPrecision}, false},
+		{"00:00:00.132528754353245897987092345345", MillisecondPrecision, Interval{0, 0, 133, MillisecondPrecision}, false},
+		{"00:00:00.132628754353245897987092345345", MillisecondPrecision, Interval{0, 0, 133, MillisecondPrecision}, false},
 	}
 
-	for j, v := range test {
-		i, err := Parse(v.s, MicrosecondPrecision)
+	for _, v := range test {
+		i, err := ParseInterval(v.s, v.prec)
 		if (err != nil) != v.err {
-			t.Errorf("Test-%v, got error: %s", j, err)
+			t.Errorf("%v,%v: expect error %v, got %v", v.s, v.prec, v.err, err)
 		}
 		if !v.err && (err == nil) {
 			if !i.Equal(v.i) {
-				t.Errorf("Test-%v. Intervals not equal.\nExpected:\n%v\ngot:\n%v", j, v.i, i)
+				t.Errorf("%v,%v: expect %v, got %v", v.s, v.prec, v.i, i)
 			}
 		}
 	}
@@ -598,277 +472,66 @@ func TestDiv(t *testing.T) {
 	}
 }
 
-func TestEqual(t *testing.T) {
+func TestInterval_Cmp(t *testing.T) {
 	type testElement struct {
-		i   Interval
-		i2  Interval
-		res bool
+		i          Interval
+		i2         Interval
+		comparable bool
+		sign       int
+	}
+	tests := []testElement{
+		{Interval{1, 2, 3 * 1e9, NanosecondPrecision}, Interval{2, 3, 4 * 1e9, NanosecondPrecision}, true, -1},
+		{Interval{10, 2, 3 * 1e9, NanosecondPrecision}, Interval{1, 2, 3 * 1e9, NanosecondPrecision}, true, 1},
+		{Interval{1, 20, 3 * 1e9, NanosecondPrecision}, Interval{1, 2, 3 * 1e9, NanosecondPrecision}, true, 1},
+		{Interval{10, 20, 30 * 1e9, NanosecondPrecision}, Interval{2, 3, 4 * 1e9, NanosecondPrecision}, true, 1},
+		{Interval{1, 2, 3 * 1e9, NanosecondPrecision}, Interval{1, 2, 3 * 1e9, NanosecondPrecision}, true, 0},
+		{Interval{1, 2, 3 * 1e9, NanosecondPrecision}, Interval{1, 2, 3 * 1e6, MicrosecondPrecision}, true, 0},
+		{Interval{1, 0, 86400 * 1e9, NanosecondPrecision}, Interval{1, 1, 0, NanosecondPrecision}, false, 0},
+		{Interval{1, 0, 86400 * 1e3, MillisecondPrecision}, Interval{1, 1, 0, NanosecondPrecision}, false, 0},
+		{Interval{-2147483648, -2147483648, 0, NanosecondPrecision}, Interval{2147483647, -2147483647, 0, NanosecondPrecision}, true, -1},
 	}
 
-	test := []testElement{
-		// 0
-		{
-			Interval{1, 2, 3 * 1e9, NanosecondPrecision},
-			Interval{2, 3, 4 * 1e9, NanosecondPrecision},
-			false,
-		},
-
-		// 1
-		{
-			Interval{1, 2, 3 * 1e9, NanosecondPrecision},
-			Interval{1, 2, 3 * 1e9, NanosecondPrecision},
-			true,
-		},
-
-		// 2
-		{
-			Interval{0, 0, 0, NanosecondPrecision},
-			Interval{0, 0, 0, NanosecondPrecision},
-			true,
-		},
-
-		// 3
-		{
-			Interval{0, 0, 0, NanosecondPrecision},
-			Interval{1, 2, 3 * 1e9, NanosecondPrecision},
-			false,
-		},
-
-		// 4
-		{
-			Interval{1, 2, 3 * 1e9, NanosecondPrecision},
-			Interval{-1, -2, -3 * 1e9, NanosecondPrecision},
-			false,
-		},
-
-		// 5
-		{
-			Interval{-1, -2, -3 * 1e9, NanosecondPrecision},
-			Interval{1, 2, 3 * 1e9, NanosecondPrecision},
-			false,
-		},
-
-		// 6
-		{
-			Interval{-1, -2, -3 * 1e9, NanosecondPrecision},
-			Interval{-1, -2, -3 * 1e9, NanosecondPrecision},
-			true,
-		},
-
-		// 6
-		{
-			Interval{-2147483648, -2147483648, -3 * 1e9, NanosecondPrecision},
-			Interval{-2147483648, -2147483648, -3 * 1e9, NanosecondPrecision},
-			true,
-		},
+	// Extend tests: Cmp(a,b)=-Cmp(b,a)
+	var tests2 []testElement
+	for _, v := range tests {
+		v.sign *= -1
+		v.i, v.i2 = v.i2, v.i
+		tests2 = append(tests2, v)
 	}
+	tests = append(tests, tests2...)
 
-	for j, v := range test {
-		b := v.i.Equal(v.i2)
-		if b != v.res {
-			t.Errorf("Test-%v. Intervals are not equal.\n1st interval:%v\n2nd interval:%v", j, v.i, v.i2)
+	// Run
+	for _, v := range tests {
+		var less, lessEq, greater, greaterEq, eq bool
+		if v.comparable {
+			less = v.sign == -1
+			lessEq = v.sign <= 0
+			greater = v.sign == 1
+			greaterEq = v.sign >= 0
+			eq = v.sign == 0
 		}
-	}
-}
 
-func TestGreaterOrEqualAndLessOrEqual(t *testing.T) {
-	type testElement struct {
-		i   Interval
-		i2  Interval
-		res bool
-	}
-
-	test := []testElement{
-		// 0
-		{
-			Interval{1, 2, 3 * 1e9, NanosecondPrecision},
-			Interval{2, 3, 4 * 1e9, NanosecondPrecision},
-			false,
-		},
-
-		// 1
-		{
-			Interval{1, 2, 3 * 1e9, NanosecondPrecision},
-			Interval{1, 2, 3 * 1e9, NanosecondPrecision},
-			true,
-		},
-
-		// 2
-		{
-			Interval{2, 2, 3 * 1e9, NanosecondPrecision},
-			Interval{1, 2, 3 * 1e9, NanosecondPrecision},
-			true,
-		},
-
-		// 3
-		//damn seconds
-		{
-			Interval{1, 0, 86400 * 1e9, NanosecondPrecision},
-			Interval{1, 1, 0, NanosecondPrecision},
-			false,
-		},
-
-		// 4
-		//damn seconds
-		{
-			Interval{1, 0, 186400 * 1e9, NanosecondPrecision},
-			Interval{1, 1, 0, NanosecondPrecision},
-			false,
-		},
-
-		// 5
-		{
-			Interval{1, 2, 3 * 1e9, NanosecondPrecision},
-			Interval{-1, -2, -3 * 1e9, NanosecondPrecision},
-			true,
-		},
-
-		// 6
-		{
-			Interval{-1, -2, -3 * 1e9, NanosecondPrecision},
-			Interval{1, 2, 3 * 1e9, NanosecondPrecision},
-			false,
-		},
-
-		// 7
-		{
-			Interval{0, 0, 0, NanosecondPrecision},
-			Interval{0, 0, 0, NanosecondPrecision},
-			true,
-		},
-
-		// 8
-		{
-			Interval{-2147483648, 2147483647, 0, NanosecondPrecision},
-			Interval{2147483647, -2147483648, 0, NanosecondPrecision},
-			false,
-		},
-	}
-
-	for j, v := range test {
-		bG := v.i.GreaterOrEqual(v.i2)
-		if bG != v.res {
-			t.Errorf("TestGreaterOrEqual - %v. Intervals are not GreaterOrEqual.\n1st interval:%v\n2nd interval:%v", j, v.i, v.i2)
+		if s, ok := v.i.Cmp(v.i2); s != v.sign || ok != v.comparable {
+			t.Errorf("%v,%v: expect %v %v, got %v %v", v.i, v.i2, v.sign, v.comparable, s, ok)
 		}
-		bL := v.i2.LessOrEqual(v.i)
-		if bL != v.res {
-			t.Errorf("TestLessOrEqual - %v. Intervals are not LessOrEqual.\n1st interval:%v\n2nd interval:%v", j, v.i2, v.i)
+
+		if r := v.i.Comparable(v.i2); r != v.comparable {
+			t.Errorf("%v,%v: expect %v, got %v", v.i, v.i2, v.comparable, r)
 		}
-	}
-}
-
-func TestLessAndGreater(t *testing.T) {
-	type testElement struct {
-		i   Interval
-		i2  Interval
-		res bool
-	}
-
-	test := []testElement{
-		// 0
-		{
-			Interval{1, 2, 3 * 1e9, NanosecondPrecision},
-			Interval{2, 3, 4 * 1e9, NanosecondPrecision},
-			true,
-		},
-
-		// 1
-		{
-			Interval{1, 2, 3 * 1e9, NanosecondPrecision},
-			Interval{1, 2, 3 * 1e9, NanosecondPrecision},
-			false,
-		},
-
-		// 2
-		{
-			Interval{2, 2, 3 * 1e9, NanosecondPrecision},
-			Interval{1, 2, 3 * 1e9, NanosecondPrecision},
-			false,
-		},
-
-		// 3
-		//damn seconds
-		{
-			Interval{1, 0, 86400 * 1e9, NanosecondPrecision},
-			Interval{1, 1, 0, NanosecondPrecision},
-			false,
-		},
-
-		// 4
-		{
-			Interval{-2147483648, -2147483648, 0, NanosecondPrecision},
-			Interval{2147483647, -2147483647, 0, NanosecondPrecision},
-			true,
-		},
-	}
-
-	for j, v := range test {
-		bL := v.i.Less(v.i2)
-		if bL != v.res {
-			t.Errorf("TestLess - %v. 1st interval not less than 2nd.\n1st interval:%v\n2nd interval:%v", j, v.i, v.i2)
+		if r := v.i.Less(v.i2); r != less {
+			t.Errorf("%v,%v: expect %v, got %v", v.i, v.i2, less, r)
 		}
-		bG := v.i2.Greater(v.i)
-		if bG != v.res {
-			t.Errorf("TestGreater - %v. 1st interval not greater than 2nd.\n1st interval:%v\n2nd interval:%v", j, v.i2, v.i)
+		if r := v.i.LessOrEqual(v.i2); r != lessEq {
+			t.Errorf("%v,%v: expect %v, got %v", v.i, v.i2, lessEq, r)
 		}
-	}
-}
-
-func TestComparable(t *testing.T) {
-	type testElement struct {
-		i   Interval
-		i2  Interval
-		res bool
-	}
-
-	test := []testElement{
-		// 0
-		{
-			Interval{1, 2, 3 * 1e9, NanosecondPrecision},
-			Interval{2, 3, 4 * 1e9, NanosecondPrecision},
-			true,
-		},
-
-		// 1
-		{
-			Interval{1, 2, 3 * 1e9, NanosecondPrecision},
-			Interval{1, 2, 3 * 1e9, NanosecondPrecision},
-			true,
-		},
-
-		// 2
-		{
-			Interval{2, 2, 3 * 1e9, NanosecondPrecision},
-			Interval{1, 2, 3 * 1e9, NanosecondPrecision},
-			true,
-		},
-
-		// 3
-		{
-			Interval{1, 0, 86400 * 1e9, NanosecondPrecision},
-			Interval{1, 1, 0, NanosecondPrecision},
-			false,
-		},
-
-		// 4
-		{
-			Interval{1, 0, 186400 * 1e9, NanosecondPrecision},
-			Interval{1, 1, 0, NanosecondPrecision},
-			false,
-		},
-
-		// 5
-		{
-			Interval{1, 0, 186400 * 1e9, NanosecondPrecision},
-			Interval{2, 1, 0, NanosecondPrecision},
-			false,
-		},
-	}
-
-	for j, v := range test {
-		b := v.i.Comparable(v.i2)
-		if b != v.res {
-			t.Errorf("Test-%v. Intervals are not Comparable.\n1st interval:%v\n2nd interval:%v", j, v.i2, v.i)
+		if r := v.i.Greater(v.i2); r != greater {
+			t.Errorf("%v,%v: expect %v, got %v", v.i, v.i2, greater, r)
+		}
+		if r := v.i.GreaterOrEqual(v.i2); r != greaterEq {
+			t.Errorf("%v,%v: expect %v, got %v", v.i, v.i2, greaterEq, r)
+		}
+		if r := v.i.Equal(v.i2); r != eq {
+			t.Errorf("%v,%v: expect %v, got %v", v.i, v.i2, eq, r)
 		}
 	}
 }
@@ -947,9 +610,9 @@ func TestNormal(t *testing.T) {
 		mon  int32
 		day  int32
 		hour int64
-		min  int8
-		sec  int8
-		nsec int32
+		min  int64
+		sec  int64
+		nsec int64
 	}
 
 	test := []testElement{
@@ -1023,48 +686,53 @@ func TestNormal(t *testing.T) {
 }
 
 func TestAll(t *testing.T) {
-	i := Nanosecond()
-	if i.SomeSeconds != 1 {
+	i := Picosecond()
+	if i.SomeSeconds != 1 || i.precision != PicosecondPrecision {
+		t.Error("Error")
+	}
+
+	i = Nanosecond()
+	if i.SomeSeconds != 1 || i.precision != NanosecondPrecision {
 		t.Error("Error")
 	}
 
 	i = Microsecond()
-	if i.SomeSeconds != 1e3 {
+	if i.SomeSeconds != 1e3 || i.precision != NanosecondPrecision {
 		t.Error("Error")
 	}
 
 	i = Millisecond()
-	if i.SomeSeconds != 1e6 {
+	if i.SomeSeconds != 1e6 || i.precision != NanosecondPrecision {
 		t.Error("Error")
 	}
 
 	i = Second()
-	if i.SomeSeconds != 1e9 {
+	if i.SomeSeconds != 1e9 || i.precision != NanosecondPrecision {
 		t.Error("Error")
 	}
 
 	i = Minute()
-	if i.SomeSeconds != 60*1e9 {
+	if i.SomeSeconds != 60*1e9 || i.precision != NanosecondPrecision {
 		t.Error("Error")
 	}
 
 	i = Hour()
-	if i.SomeSeconds != 3600*1e9 {
+	if i.SomeSeconds != 3600*1e9 || i.precision != NanosecondPrecision {
 		t.Error("Error")
 	}
 
 	i = Day()
-	if i.Days != 1 {
+	if i.Days != 1 || i.precision != NanosecondPrecision {
 		t.Error("Error")
 	}
 
 	i = Month()
-	if i.Months != 1 {
+	if i.Months != 1 || i.precision != NanosecondPrecision {
 		t.Error("Error")
 	}
 
 	i = Year()
-	if i.Months != 12 {
+	if i.Months != 12 || i.precision != NanosecondPrecision {
 		t.Error("Error")
 	}
 }
@@ -1310,7 +978,7 @@ func TestSince(t *testing.T) {
 	for j, v := range test {
 		nsec := time.Since(v)
 		i := Since(v)
-		if (i.Months != 0) || (i.Days != 0) || mathhelper.AbsInt64(i.SomeSeconds-int64(nsec)) > inaccuracySeconds*NanosecsInSec {
+		if (i.Months != 0) || (i.Days != 0) || mathh.AbsInt64(i.SomeSeconds-int64(nsec)) > inaccuracySeconds*timeh.NanosecsInSec {
 			t.Errorf("Test-%v. Wrong time since: %v\nExpected (time.Since):\n%v\ngot (Since):\n%v", j, v, nsec, time.Duration(i.SomeSeconds))
 		}
 	}
@@ -1329,5 +997,95 @@ func TestSinceExtended(t *testing.T) {
 			t.Errorf("Test-%v\nWrong time since: %v\nGit interval:%v\ntime now(v1):%v\nexpected time since(ts):%v", j, v, i, v1, time.Since(v1))
 		}
 
+	}
+}
+
+func TestNewInterval(t *testing.T) {
+	if i := NewInterval(MicrosecondPrecision); i.Days != 0 || i.Months != 0 || i.SomeSeconds != 0 || i.precision != MicrosecondPrecision {
+		t.Errorf("expect %v %v, got %v", 0, MicrosecondPrecision, i)
+	}
+	if i := NewInterval(15); i.Days != 0 || i.Months != 0 || i.SomeSeconds != 0 || i.precision != maxPrecision {
+		t.Errorf("expect %v %v, got %v", 0, maxPrecision, i)
+	}
+}
+
+func TestNewGoInterval(t *testing.T) {
+	if i := NewGoInterval(); i.Days != 0 || i.Months != 0 || i.SomeSeconds != 0 || i.precision != GoPrecision {
+		t.Errorf("expect %v %v, got %v", 0, GoPrecision, i)
+	}
+}
+
+func TestNewPgInterval(t *testing.T) {
+	if i := NewPgInterval(); i.Days != 0 || i.Months != 0 || i.SomeSeconds != 0 || i.precision != PgPrecision {
+		t.Errorf("expect %v %v, got %v", 0, PgPrecision, i)
+	}
+}
+
+func TestInterval_SetPrecision(t *testing.T) {
+	type testElement struct {
+		i Interval
+		p uint8
+		r Interval
+	}
+	tests := []testElement{
+		{Interval{1, 2, 1, SecondPrecision}, MillisecondPrecision, Interval{1, 2, 1000, MillisecondPrecision}},
+		{Interval{1, 2, 1, MillisecondPrecision}, MillisecondPrecision, Interval{1, 2, 1, MillisecondPrecision}},
+		{Interval{1, 2, 1499, MillisecondPrecision}, SecondPrecision, Interval{1, 2, 1, SecondPrecision}},
+		{Interval{1, 2, 1500, MillisecondPrecision}, SecondPrecision, Interval{1, 2, 2, SecondPrecision}},
+		{Interval{1, 2, 1, NanosecondPrecision}, 15, Interval{1, 2, 1000, PicosecondPrecision}},
+	}
+	for _, v := range tests {
+		if r := v.i.SetPrecision(v.p); r != v.r {
+			t.Errorf("%v,%v: expect %v, got %v", v.i, v.p, v.r, r)
+		}
+	}
+}
+
+func TestInterval_Precision(t *testing.T) {
+	i := Interval{0, 0, 0, SecondPrecision}
+	if i.Precision() != SecondPrecision {
+		t.Error("error")
+	}
+	i = Interval{0, 0, 0, MillisecondPrecision}
+	if i.Precision() != MillisecondPrecision {
+		t.Error("error")
+	}
+}
+
+func TestInterval_SafePrec(t *testing.T) {
+	type testElement struct {
+		i Interval
+		p uint8
+	}
+	// 	10 seconds => 0 (second precision, can not be less)
+	//	10 milliseconds => 2 (2 digit after decimal point precision)
+	// 	123 microseconds => 6 (microsecond precision)
+	tests := []testElement{
+		{Interval{1, 2, 10, SecondPrecision}, SecondPrecision},
+		{Interval{1, 2, 10, MillisecondPrecision}, 2},
+		{Interval{1, 2, 123, MicrosecondPrecision}, MicrosecondPrecision},
+	}
+	for _, v := range tests {
+		if r := v.i.SafePrec(); r != v.p {
+			t.Errorf("%v: expect %v, got %v", v.i, v.p, r)
+		}
+	}
+}
+
+func TestInterval_In(t *testing.T) {
+	type testElement struct {
+		i1, i2 Interval
+		r      int64
+	}
+	tests := []testElement{
+		{Interval{0, 0, 1, GoPrecision}, Interval{0, 0, 10, GoPrecision}, 10},
+		{Interval{0, 0, 1, MillisecondPrecision}, Interval{0, 0, 1, SecondPrecision}, 1000},
+		{Interval{0, 1, 0, GoPrecision}, Interval{1, 0, 0, SecondPrecision}, 30},
+		{Interval{0, 0, 1, SecondPrecision}, Interval{0, 1, 0, GoPrecision}, 3600 * 24},
+	}
+	for _, v := range tests {
+		if r := v.i1.In(v.i2); r != v.r {
+			t.Errorf("%v,%v: expect %v, got %v", v.i1, v.i2, v.r, r)
+		}
 	}
 }

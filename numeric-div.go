@@ -1,20 +1,20 @@
-package numeric
+package pgtypes
 
-import "github.com/apaxa-io/mathhelper"
+import "github.com/apaxa-go/helper/mathh"
 
 const (
 	// Limit on the precision (and hence scale) specifiable in a NUMERIC typmod.
 	// Note that the implementation limit on the length of a numeric value is much larger --- beware of what you use this for!
-	// pgMaxPrecision is a copy of PostgreSQL NUMERIC_MAX_PRECISION defined at "src/include/utils/numeric.h".
-	pgMaxPrecision = 1000
+	// pgNumericMaxPrecision is a copy of PostgreSQL NUMERIC_MAX_PRECISION defined at "src/include/utils/numeric.h".
+	pgNumericMaxPrecision = 1000
 	// Internal limits on the scales chosen for calculation results
-	// pgMaxDisplayScale and pgMinDisplayScale are copy of PostgreSQL NUMERIC_MAX_DISPLAY_SCALE/NUMERIC_MIN_DISPLAY_SCALE defined at "src/include/utils/numeric.h".
-	pgMaxDisplayScale = pgMaxPrecision
-	pgMinDisplayScale = 0
+	// pgNumericMaxDisplayScale and pgNumericMinDisplayScale are copy of PostgreSQL NUMERIC_MAX_DISPLAY_SCALE/NUMERIC_MIN_DISPLAY_SCALE defined at "src/include/utils/numeric.h".
+	pgNumericMaxDisplayScale = pgNumericMaxPrecision
+	pgNumericMinDisplayScale = 0
 	// For inherently inexact calculations such as division and square root, we try to get at least this many significant digits;
 	// the idea is to deliver a result no worse than float8 would.
-	// pgMinSigDigits is a copy of PostgreSQL NUMERIC_MIN_SIG_DIGITS defined at "src/include/utils/numeric.h".
-	pgMinSigDigits = 16
+	// pgNumericMinSigDigits is a copy of PostgreSQL NUMERIC_MIN_SIG_DIGITS defined at "src/include/utils/numeric.h".
+	pgNumericMinSigDigits = 16
 )
 
 // divAbs divide number (d1,w1) to (d2,w2).
@@ -28,9 +28,9 @@ func divAbs(d1 []int16, w1 int16, d2 []int16, w2 int16, s3 int16, round bool) (d
 	w3 = w1 - w2
 
 	{
-		d3Len := int(w3) + 1 + (int(s3)+groupLen-1)/groupLen // The number of accurate result digits we need to produce,
-		d3Len = mathhelper.Max2Int(d3Len, 1)                 // but at least 1,
-		if round {                                           // and if rounding needed, figure one more digit to ensure correct result
+		d3Len := int(w3) + 1 + (int(s3)+numericGroupLen-1)/numericGroupLen // The number of accurate result digits we need to produce,
+		d3Len = mathh.Max2Int(d3Len, 1)                                    // but at least 1,
+		if round {                                                         // and if rounding needed, figure one more digit to ensure correct result
 			d3Len++
 		}
 
@@ -44,7 +44,7 @@ func divAbs(d1 []int16, w1 int16, d2 []int16, w2 int16, s3 int16, round bool) (d
 		// The working dividend (d1C) normally requires len(d3) + len(d2) digits, but make it at least len(d1) so we can load all of d1 into it.
 		// (There will be an additional digit d1C[0] in the dividend space, but for consistency with Knuth's notation we don't count that in d1CLen.)
 		d1CLen = len(d3) + len(d2)
-		d1CLen = mathhelper.Max2Int(d1CLen, len(d1))
+		d1CLen = mathh.Max2Int(d1CLen, len(d1))
 
 		// We need a workspace with room for the working dividend (d1CLen+1 digits).
 		d1C = make([]int16, d1CLen+1)
@@ -62,7 +62,7 @@ func divAbs(d1 []int16, w1 int16, d2 []int16, w2 int16, s3 int16, round bool) (d
 		// If there's only a single divisor (d2) digit, we can use a fast path (cf. Knuth section 4.3.1 exercise 16).
 		var underflow int
 		for i := 0; i < len(d3); i++ {
-			underflow = underflow*base + int(d1C[i+1])
+			underflow = underflow*numericBase + int(d1C[i+1])
 			d3[i] = int16(underflow / int(d2C[1]))
 			underflow = underflow % int(d2C[1])
 		}
@@ -72,21 +72,21 @@ func divAbs(d1 []int16, w1 int16, d2 []int16, w2 int16, s3 int16, round bool) (d
 		// We need the first divisor digit (d2C[1]) to be >= NBASE/2.
 		// If it isn't, make it so by scaling up both the divisor and dividend by the factor "d".
 		// (The reason for allocating d1C[0] above is to leave room for possible overflow here.)
-		if d2C[1] < base/2 {
-			d := base / (int(d2C[1]) + 1)
+		if d2C[1] < numericBase/2 {
+			d := numericBase / (int(d2C[1]) + 1)
 
 			var overflow int
 			for i := len(d2); i > 0; i-- {
 				overflow += int(d2C[i]) * d
-				d2C[i] = int16(overflow % base)
-				overflow = overflow / base
+				d2C[i] = int16(overflow % numericBase)
+				overflow = overflow / numericBase
 			}
 			overflow = 0
 			// At this point only len(d1) of dividend (d1C) can be nonzero
 			for i := len(d1); i >= 0; i-- {
 				overflow += int(d1C[i]) * d
-				d1C[i] = int16(overflow % base)
-				overflow = overflow / base
+				d1C[i] = int16(overflow % numericBase)
+				overflow = overflow / numericBase
 			}
 		}
 
@@ -95,7 +95,7 @@ func divAbs(d1 []int16, w1 int16, d2 []int16, w2 int16, s3 int16, round bool) (d
 		// This is essentially the same as the common manual procedure for long division.
 		for j := 0; j < len(d3); j++ {
 			// Estimate quotient digit from the first two dividend digits
-			next2Digits := int(d1C[j])*base + int(d1C[j+1])
+			next2Digits := int(d1C[j])*numericBase + int(d1C[j+1])
 
 			// If next2Digits is 0, then quotient digit must be 0 and there's no need to adjust the working dividend.
 			// It's worth testing here to fall out ASAP when processing trailing zeroes in a dividend.
@@ -105,7 +105,7 @@ func divAbs(d1 []int16, w1 int16, d2 []int16, w2 int16, s3 int16, round bool) (d
 			}
 
 			// Estimated quotient digit
-			estDigit := int(base - 1)
+			estDigit := int(numericBase - 1)
 			if d1C[j] != d2C[1] {
 				estDigit = next2Digits / int(d2C[1])
 			}
@@ -113,7 +113,7 @@ func divAbs(d1 []int16, w1 int16, d2 []int16, w2 int16, s3 int16, round bool) (d
 			// Adjust quotient digit if it's too large.
 			// Knuth proves that after this step, the quotient digit will be either correct or just one too large.
 			// (Note: it's OK to use dividend[j+2] here because we know the divisor length is at least 2.)
-			for int(d2C[2])*estDigit > (next2Digits-estDigit*int(d2C[1]))*base+int(d1C[j+2]) {
+			for int(d2C[2])*estDigit > (next2Digits-estDigit*int(d2C[1]))*numericBase+int(d1C[j+2]) {
 				estDigit--
 			}
 
@@ -124,11 +124,11 @@ func divAbs(d1 []int16, w1 int16, d2 []int16, w2 int16, s3 int16, round bool) (d
 				var overflow, borrow int
 				for i := len(d2); i >= 0; i-- {
 					overflow += int(d2C[i]) * estDigit
-					borrow -= overflow % base
-					overflow = overflow / base
+					borrow -= overflow % numericBase
+					overflow = overflow / numericBase
 					borrow += int(d1C[j+i])
 					if borrow < 0 {
-						d1C[j+i] = int16(borrow + base)
+						d1C[j+i] = int16(borrow + numericBase)
 						borrow = -1
 					} else {
 						d1C[j+i] = int16(borrow)
@@ -145,8 +145,8 @@ func divAbs(d1 []int16, w1 int16, d2 []int16, w2 int16, s3 int16, round bool) (d
 					var overflow int
 					for i := len(d2); i >= 0; i-- {
 						overflow += int(d1C[j+i]) + int(d2C[i])
-						if overflow >= base {
-							d1C[j+i] = int16(overflow - base)
+						if overflow >= numericBase {
+							d1C[j+i] = int16(overflow - numericBase)
 							overflow = 1
 						} else {
 							d1C[j+i] = int16(overflow)
@@ -186,6 +186,7 @@ func trimAbs(d []int16, w int16) ([]int16, int16) {
 
 	if len(d) == 0 {
 		w = 0
+		d = nil
 	} else {
 		w -= int16(skipLeft)
 	}
@@ -202,13 +203,13 @@ func roundAbs(d []int16, w int16, s int16) ([]int16, int16) {
 		return nil, 0
 	}
 
-	decimalDigits := (int(w)+1)*groupLen + int(s)
+	decimalDigits := (int(w)+1)*numericGroupLen + int(s)
 	// If di < 0 the result must be 0, but if di = 0, the value loses all digits, but could round up to 1 if its first extra digit is >= 5.
 	if decimalDigits < 0 {
 		return nil, 0
 	}
-	baseDigits := (decimalDigits + groupLen - 1) / groupLen
-	decimalDigits %= groupLen // 0, or number of decimal digits to keep in last base digit
+	baseDigits := (decimalDigits + numericGroupLen - 1) / numericGroupLen
+	decimalDigits %= numericGroupLen // 0, or number of decimal digits to keep in last base digit
 	if baseDigits > len(d) || (baseDigits == len(d) && decimalDigits == 0) {
 		return d, w
 	}
@@ -221,7 +222,7 @@ func roundAbs(d []int16, w int16, s int16) ([]int16, int16) {
 			d = d[:baseDigits]
 		}
 
-		if extraBaseDigit >= base/2 {
+		if extraBaseDigit >= numericBase/2 {
 			carry = 1
 		} else {
 			carry = 0
@@ -237,8 +238,8 @@ func roundAbs(d []int16, w int16, s int16) ([]int16, int16) {
 		carry = 0
 		if extra >= pow10/2 {
 			pow10 += d[baseDigits]
-			if pow10 >= base {
-				pow10 -= base
+			if pow10 >= numericBase {
+				pow10 -= numericBase
 				carry = 1
 			}
 			d[baseDigits] = pow10
@@ -248,8 +249,8 @@ func roundAbs(d []int16, w int16, s int16) ([]int16, int16) {
 	// Propagate carry if needed
 	for baseDigits--; carry > 0 && baseDigits >= 0; baseDigits-- {
 		carry += d[baseDigits]
-		if carry >= base {
-			d[baseDigits] = carry - base
+		if carry >= numericBase {
+			d[baseDigits] = carry - numericBase
 			carry = 1
 		} else {
 			d[baseDigits] = carry
@@ -272,18 +273,18 @@ func truncAbs(d []int16, w int16, rscale int16) ([]int16, int16) {
 		return nil, 0
 	}
 
-	decimalDigits := (int(w)+1)*groupLen + int(rscale)
+	decimalDigits := (int(w)+1)*numericGroupLen + int(rscale)
 	// If di <= 0, the value loses all digits.
 	if decimalDigits <= 0 {
 		return nil, 0
 	}
-	baseDigits := (decimalDigits + groupLen - 1) / groupLen
+	baseDigits := (decimalDigits + numericGroupLen - 1) / numericGroupLen
 
 	if baseDigits <= len(d) {
 		d = d[:baseDigits]
 
 		// 0, or number of decimal digits to keep in last base digit
-		decimalDigits %= groupLen
+		decimalDigits %= numericGroupLen
 
 		if decimalDigits > 0 {
 			// Must truncate within last base digit
@@ -307,7 +308,6 @@ func selectDivScaleAbs(d1 []int16, w1 int16, d2 []int16, w2 int16) int16 {
 	// so that numeric gives a result no less accurate than float8; but use a scale not less than either input's display scale.
 
 	// Get the actual (normalized) weight and first digit of each input
-	// TODO is passed value always normalized? Skip normalization here?
 	firstDigit1 := int16(0)
 	for i := 0; i < len(d1); i++ {
 		if d1[i] != 0 {
@@ -339,11 +339,11 @@ func selectDivScaleAbs(d1 []int16, w1 int16, d2 []int16, w2 int16) int16 {
 	}
 
 	// Select result scale
-	rscale := pgMinSigDigits - qweight*groupLen
-	rscale = mathhelper.Max2Int16(rscale, getScaleAbs(d1, w1)) // Here used emulated scale of operand
-	rscale = mathhelper.Max2Int16(rscale, getScaleAbs(d2, w2)) // Here used emulated scale of operand
-	rscale = mathhelper.Max2Int16(rscale, pgMinDisplayScale)
-	rscale = mathhelper.Min2Int16(rscale, pgMaxDisplayScale)
+	rscale := pgNumericMinSigDigits - qweight*numericGroupLen
+	rscale = mathh.Max2Int16(rscale, getScaleAbs(d1, w1)) // Here used emulated scale of operand
+	rscale = mathh.Max2Int16(rscale, getScaleAbs(d2, w2)) // Here used emulated scale of operand
+	rscale = mathh.Max2Int16(rscale, pgNumericMinDisplayScale)
+	rscale = mathh.Min2Int16(rscale, pgNumericMaxDisplayScale)
 
 	return rscale
 }
@@ -352,36 +352,42 @@ func selectDivScaleAbs(d1 []int16, w1 int16, d2 []int16, w2 int16) int16 {
 // It returns number of decimal digit after decimal point.
 // Result is not exactly, because this function treats each base digit as a base number of decimal digits ("0.9000"="0.9" but getScaleAbs returns 4).
 // Result value as always >= 0 as required be PostgreSQL field.
-// This function used then calculation result depends on operands scale (div, sqrt, ...). Most of arithmetic operations does not require scale because they are absolutely accurate.
+// This function used then calculation result depends on operands scale (div, sqrt, ...) and in communication with DB.
+// Most of arithmetic operations does not require scale because they are absolutely accurate.
 func getScaleAbs(d []int16, w int16) int16 {
-	s := (int16(len(d)) - w - 1) * groupLen
+	s := (int16(len(d)) - w - 1) * numericGroupLen
 	if s <= 0 {
 		return 0
 	}
 	return s
 }
 
-// Div is just a shorthand for DivPrec with default scale and rounding enabled.
+// Quo is just a shorthand for QuoPrec with default scale and rounding enabled.
 // Default scale calculates as in PostgreSQL (more or less).
-func (z *Numeric) Div(x, y *Numeric) *Numeric {
-	return z.DivPrec(x, y, selectDivScaleAbs(x.digits, x.weight, y.digits, y.weight), true)
+func (z *Numeric) Quo(x, y *Numeric) *Numeric {
+	return z.QuoPrec(x, y, selectDivScaleAbs(x.digits, x.weight, y.digits, y.weight), true)
 }
 
-func (z *Numeric) DivPrec(x, y *Numeric, scale int16, round bool) *Numeric {
+// QuoPrec sets z to the quotient x/y for y != 0 and returns z.
+// Result will truncated or rounded up to scale decimal digits after decimal point.
+// Result will be rounded if round is true, otherwise result will be truncated.
+// If y == 0, a division-by-zero run-time panic occurs.
+// QuoPrec implements truncated division (like Go); see QuoRem for more details.
+func (z *Numeric) QuoPrec(x, y *Numeric, scale int16, round bool) *Numeric {
 	if x.IsNaN() || y.IsNaN() {
 		return z.SetNaN()
 	}
 	if y.IsZero() {
-		panic("") // TODO
+		panic("division by zero")
 	}
 	if x.IsZero() {
 		return z.SetZero()
 	}
 
 	if x.sign == y.sign {
-		z.sign = Positive
+		z.sign = numericPositive
 	} else {
-		z.sign = Negative
+		z.sign = numericNegative
 	}
 
 	z.digits, z.weight = divAbs(x.digits, x.weight, y.digits, y.weight, scale, round)
@@ -389,14 +395,26 @@ func (z *Numeric) DivPrec(x, y *Numeric, scale int16, round bool) *Numeric {
 	return z
 }
 
-func (z *Numeric) DivMod(x, y, m *Numeric) (*Numeric, *Numeric) {
-	z.DivPrec(x, y, 0, false)
+// QuoRem sets z to the quotient x/y and r to the remainder x%y and returns the pair (z, r) for y != 0.
+// If y == 0, a division-by-zero run-time panic occurs.
+//
+// QuoRem implements T-division and modulus (like Go):
+//
+//	q = x/y      with the result truncated to zero
+//	r = x - y*q
+//
+// (See Daan Leijen, ``Division and Modulus for Computer Scientists''.)
+// Euclidean division and modulus (unlike Go) do not currently implemented for Numeric.
+func (z *Numeric) QuoRem(x, y, m *Numeric) (*Numeric, *Numeric) {
+	z.QuoPrec(x, y, 0, false)
 	m.Sub(x, m.Mul(z, y))
 	return z, m
 }
 
-// mod(x,y) = x - trunc(x/y)*y
-func (z *Numeric) Mod(x, y *Numeric) *Numeric {
-	z.DivMod(x, y, z)
+// Rem sets z to the remainder x%y for y != 0 and returns z.
+// If y == 0, a division-by-zero run-time panic occurs.
+// Rem implements truncated modulus (like Go); see QuoRem for more details.
+func (z *Numeric) Rem(x, y *Numeric) *Numeric {
+	z.QuoRem(x, y, z)
 	return z
 }

@@ -1,0 +1,19 @@
+language: go
+sudo: false
+go:
+  - tip
+services:
+  - postgresql
+addons:
+  postgresql: "9.4"
+env:
+  global:
+    - PG_HOST=127.0.0.1
+    - PG_DATABASE=test_pgtypes
+    - PG_USER=postgres
+before_install:
+  - go get github.com/mattn/goveralls
+before_script:
+  - psql -c "create database $PG_DATABASE;" -U postgres
+script:
+  - $HOME/gopath/bin/goveralls -service travis-ci

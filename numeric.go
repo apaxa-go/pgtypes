@@ -1,71 +1,66 @@
-package numeric
+package pgtypes
 
 import (
-	"github.com/apaxa-io/mathhelper"
-	"github.com/apaxa-io/strconvhelper"
-	"github.com/apaxa-io/stringshelper"
+	"github.com/apaxa-go/helper/mathh"
+	"github.com/apaxa-go/helper/strconvh"
+	"github.com/apaxa-go/helper/stringsh"
 	"strings"
 )
 
-// TODO move to parent package
-// TODO implement NullNumeric
-
-type Sign uint16
+type numericSign uint16
 
 const (
-	Positive Sign = 0x0000
-	Negative      = 0x4000
-	NaN           = 0xC000
+	numericPositive numericSign = 0x0000
+	numericNegative             = 0x4000
+	numericNaN                  = 0xC000
 )
 
 const (
-	nan   = "NaN"
-	delim = '.'
+	numericNanStr    = "NaN"
+	numericDelimiter = '.'
+	numericBase      = 10000
+	numericGroupLen  = 4 // Number of 10-based digits stored together, =lg(base)
 )
 
-const (
-	base     = 10000
-	groupLen = 4 // Number of 10-based digits stored together, =lg(base)
-)
-
+// Numeric is a PostgreSQL Numeric type implementation in GoLang.
+// It is arbitrary precision numbers type which can store numbers with a very large number of digits.
+// It is especially recommended for storing monetary amounts and other quantities where exactness is required.
+// Calculations with Numeric values yield exact results where possible, e.g. addition, subtraction, multiplication.
+// However, calculations on Numeric values are very slow compared to the integer types, or to the floating-point types.
+// Internally Numeric type has the same structure (except dscale field) as a PostgreSQL numeric type so it perfect for using in DB communications.
 type Numeric struct {
-	sign   Sign
+	sign   numericSign
 	digits []int16
 	weight int16
 }
 
 func parseInteger(s string, fracPos int) (digits []int16, weight int16) {
 	// Pad string left & right (on the left and on the right side of fracPos should be integer number of groupLen digits)
-	shift := ((fracPos % groupLen) + groupLen) % groupLen
+	shift := ((fracPos % numericGroupLen) + numericGroupLen) % numericGroupLen
 	leftAdd := 0
 	if shift != 0 {
-		leftAdd = groupLen - shift
+		leftAdd = numericGroupLen - shift
 	}
-	shift = (leftAdd + len(s)) % groupLen
+	shift = (leftAdd + len(s)) % numericGroupLen
 	rightAdd := 0
 	if shift != 0 {
-		rightAdd = groupLen - shift
+		rightAdd = numericGroupLen - shift
 	}
 
 	if leftAdd != 0 || rightAdd != 0 {
 		s = strings.Repeat("0", leftAdd) + s + strings.Repeat("0", rightAdd)
 	}
 
-	digits = make([]int16, len(s)/groupLen)
+	digits = make([]int16, len(s)/numericGroupLen)
 
 	for i := range digits {
-		//k:=int16(1)
-		//for j:=groupLen-1; j>=0; j--{
-		//	r[i]=(s[i*groupLen+j]-'0')*k
-		//	k*=10
-		//}
-		digits[i] = int16(s[i*groupLen+0]-'0')*1000 +
-			int16(s[i*groupLen+1]-'0')*100 +
-			int16(s[i*groupLen+2]-'0')*10 +
-			int16(s[i*groupLen+3]-'0')*1
+		digits[i] = int16(s[i*numericGroupLen+0]-'0')*1000 +
+			int16(s[i*numericGroupLen+1]-'0')*100 +
+			int16(s[i*numericGroupLen+2]-'0')*10 +
+			int16(s[i*numericGroupLen+3]-'0')*1
 	}
 
-	weight = int16(mathhelper.DivideCeilInt(fracPos, groupLen) - 1)
+	weight = int16(mathh.DivideCeilInt(fracPos, numericGroupLen) - 1)
 
 	return
 }
@@ -77,7 +72,7 @@ func findDelim(s string) (delimPos int, valid bool) {
 	delimPos = l // ("123"=="123.")
 
 	for i := 0; i < l; i++ {
-		if s[i] == delim {
+		if s[i] == numericDelimiter {
 			if delimPos == l {
 				delimPos = i
 			} else { // Second delimiter found - error
@@ -99,11 +94,11 @@ func (z *Numeric) parseUnsigned(s string) (valid bool) {
 
 	switch delimPos {
 	case len(s):
-		s = stringshelper.TrimRightBytes(s, '0')
+		s = stringsh.TrimRightBytes(s, '0')
 	case len(s) - 1:
-		s = stringshelper.TrimRightBytes(s[:delimPos], '0')
+		s = stringsh.TrimRightBytes(s[:delimPos], '0')
 	default:
-		s = stringshelper.TrimRightBytes(s[:delimPos]+s[delimPos+1:], '0')
+		s = stringsh.TrimRightBytes(s[:delimPos]+s[delimPos+1:], '0')
 	}
 
 	if len(s) == 0 {
@@ -114,7 +109,7 @@ func (z *Numeric) parseUnsigned(s string) (valid bool) {
 	{
 		// For now delimPos means position of first fraction char in string (may be out of index)
 		delimPos -= len(s)
-		s = stringshelper.TrimLeftBytes(s, '0')
+		s = stringsh.TrimLeftBytes(s, '0')
 		delimPos += len(s)
 	}
 
@@ -127,8 +122,8 @@ func (z *Numeric) setString(s string) bool {
 		return false
 	}
 
-	if s == nan {
-		z.sign = NaN
+	if s == numericNanStr {
+		z.sign = numericNaN
 		z.digits = nil
 		z.weight = 0
 
@@ -137,18 +132,22 @@ func (z *Numeric) setString(s string) bool {
 
 	switch s[0] {
 	case '-':
-		z.sign = Negative
+		z.sign = numericNegative
 		s = s[1:]
 	case '+':
-		z.sign = Positive
+		z.sign = numericPositive
 		s = s[1:]
 	default:
-		z.sign = Positive
+		z.sign = numericPositive
 	}
 
 	return z.parseUnsigned(s)
 }
 
+// SetString sets z to the value of s and returns z and a boolean indicating success.
+// s must be a floating-point number of one of format
+// 	[+-]?[0-9]*\.[0-9]*	// "123.456", "123.", ".456", ".", "-123.456"
+// 	[+-]?[0-9]+		// "123", "-123"
 func (z *Numeric) SetString(s string) (*Numeric, bool) {
 	if z.setString(s) {
 		return z, true
@@ -156,12 +155,13 @@ func (z *Numeric) SetString(s string) (*Numeric, bool) {
 	return nil, false
 }
 
+// String converts the Number x to a string representation (10-base).
 func (x *Numeric) String() (r string) {
-	if x.sign == NaN {
-		return nan
+	if x.sign == numericNaN {
+		return numericNanStr
 	}
 
-	if x.sign == Negative {
+	if x.sign == numericNegative {
 		r = "-"
 	}
 
@@ -173,30 +173,30 @@ func (x *Numeric) String() (r string) {
 		// x.digits may not be enough to print all digits before delimiter (example: "10000000").
 		for i := 0; i <= int(x.weight) && i < len(x.digits); i++ {
 			if i == 0 {
-				r += strconvhelper.FormatInt16(x.digits[i])
+				r += strconvh.FormatInt16(x.digits[i])
 			} else {
-				r += stringshelper.PadLeftWithByte(strconvhelper.FormatInt16(x.digits[i]), '0', groupLen)
+				r += stringsh.PadLeftWithByte(strconvh.FormatInt16(x.digits[i]), '0', numericGroupLen)
 			}
 		}
 
 		// Append some groups of zero if x.digits is not enough to print all digits before delimiter.
 		appendZero := int(x.weight) + 1 - len(x.digits)
 		if appendZero > 0 {
-			r += strings.Repeat("0", appendZero*groupLen)
+			r += strings.Repeat("0", appendZero*numericGroupLen)
 		}
 	}
 
 	// Print fraction part
 	if len(x.digits) > int(x.weight)+1 {
-		r += string(delim)
+		r += string(numericDelimiter)
 		if x.weight < -1 {
-			r += strings.Repeat("0", groupLen*(-int(x.weight)-1))
+			r += strings.Repeat("0", numericGroupLen*(-int(x.weight)-1))
 		}
-		for i := int(mathhelper.Max2Int16(x.weight+1, 0)); i < len(x.digits); i++ {
+		for i := int(mathh.Max2Int16(x.weight+1, 0)); i < len(x.digits); i++ {
 			if i < len(x.digits)-1 {
-				r += stringshelper.PadLeftWithByte(strconvhelper.FormatInt16(x.digits[i]), '0', groupLen)
+				r += stringsh.PadLeftWithByte(strconvh.FormatInt16(x.digits[i]), '0', numericGroupLen)
 			} else {
-				r += stringshelper.TrimRightBytes(stringshelper.PadLeftWithByte(strconvhelper.FormatInt16(x.digits[i]), '0', groupLen), '0')
+				r += stringsh.TrimRightBytes(stringsh.PadLeftWithByte(strconvh.FormatInt16(x.digits[i]), '0', numericGroupLen), '0')
 			}
 		}
 	}
@@ -204,26 +204,30 @@ func (x *Numeric) String() (r string) {
 	return
 }
 
+// SetZero sets Number z to zero and return z.
 func (z *Numeric) SetZero() *Numeric {
-	z.sign = Positive
+	z.sign = numericPositive
 	z.weight = 0
-	z.digits = []int16{}
+	z.digits = nil
 	return z
 }
 
+// SetNaN sets Number z to NaN and return z.
 func (z *Numeric) SetNaN() *Numeric {
-	z.sign = NaN
+	z.sign = numericNaN
 	z.weight = 0
-	z.digits = []int16{}
+	z.digits = nil
 	return z
 }
 
-func (z *Numeric) IsZero() bool {
-	return z.sign == Positive && len(z.digits) == 0
+// IsZero reports whether x is zero.
+func (x *Numeric) IsZero() bool {
+	return x.sign == numericPositive && len(x.digits) == 0
 }
 
-func (z *Numeric) IsNaN() bool {
-	return z.sign == NaN
+// IsNaN reports whether x is NaN.
+func (x *Numeric) IsNaN() bool {
+	return x.sign == numericNaN
 }
 
 func digitByWeightAbs(d []int16, w int16, reqW int) int16 {
@@ -236,7 +240,7 @@ func digitByWeightAbs(d []int16, w int16, reqW int) int16 {
 	return d[int(w)-reqW]
 }
 
-// cmp compare absolute value of two Numeric (i.e. without sign).
+// cmpAbs compare absolute value of two Numeric (i.e. without sign).
 //
 //   -1 if d1 <  d2
 //    0 if d1 == d2
@@ -258,7 +262,7 @@ func cmpAbs(d1 []int16, w1 int16, d2 []int16, w2 int16) int {
 		return 1
 	}
 
-	for i := 0; i < mathhelper.Min2Int(len(d1), len(d2)); i++ {
+	for i := 0; i < mathh.Min2Int(len(d1), len(d2)); i++ {
 		if d1[i] < d2[i] {
 			return -1
 		} else if d1[i] > d2[i] {
@@ -281,20 +285,27 @@ func cmpAbs(d1 []int16, w1 int16, d2 []int16, w2 int16) int {
 //    0 if x == y
 //   +1 if x >  y
 //
+// NaN treats as equal to other NaN and greater then any other number. This is as in PostgreSQL.
 func (x *Numeric) Cmp(y *Numeric) (r int) {
-	if x.sign == NaN || y.sign == NaN {
-		return -1 // TODO is it good
+	// NaN logic
+	switch {
+	case x.sign == numericNaN && y.sign == numericNaN:
+		return 0
+	case x.sign == numericNaN:
+		return 1
+	case y.sign == numericNaN:
+		return -1
 	}
 
-	if x.sign == Positive && y.sign == Negative {
+	if x.sign == numericPositive && y.sign == numericNegative {
 		return +1
-	} else if x.sign == Negative && y.sign == Positive {
+	} else if x.sign == numericNegative && y.sign == numericPositive {
 		return -1
 	}
 
 	r = cmpAbs(x.digits, x.weight, y.digits, y.weight)
 
-	if x.sign == Negative {
+	if x.sign == numericNegative {
 		r *= -1
 	}
 
@@ -302,14 +313,14 @@ func (x *Numeric) Cmp(y *Numeric) (r int) {
 }
 
 func addAbs(d1 []int16, w1 int16, d2 []int16, w2 int16) (d3 []int16, w3 int16) {
-	weightFrom := mathhelper.Min2Int(int(w1)-len(d1)+1, int(w2)-len(d2)+1)
-	weightTo := mathhelper.Max2Int(int(w1), int(w2))
+	weightFrom := mathh.Min2Int(int(w1)-len(d1)+1, int(w2)-len(d2)+1)
+	weightTo := mathh.Max2Int(int(w1), int(w2))
 	var overflow int16
 	var index int
 	for i := weightFrom; i <= weightTo; i++ {
 		tmp := digitByWeightAbs(d1, w1, i) + digitByWeightAbs(d2, w2, i) + overflow
-		overflow = tmp / base
-		tmp = tmp % base
+		overflow = tmp / numericBase
+		tmp = tmp % numericBase
 		if d3 == nil && tmp != 0 {
 			requiredLen := weightTo - i + 1 + 1 // Reserve 1 for overall overflow
 			d3 = make([]int16, requiredLen)
@@ -346,13 +357,20 @@ func add(d1 []int16, w1 int16, n1 bool, d2 []int16, w2 int16, n2 bool) (d3 []int
 	return sub(d1, w1, n1, d2, w2, !n2)
 }
 
+// Copy sets z to x and returns z.
+// x is not changed even if z and x are the same.
 func (z *Numeric) Copy(x *Numeric) *Numeric {
-	z.digits, z.weight, z.sign = x.digits, x.weight, x.sign
+	if x != z {
+		z.weight, z.sign = x.weight, x.sign
+		z.digits = make([]int16, len(x.digits))
+		copy(z.digits, x.digits)
+	}
 	return z
 }
 
+// Add sets z to the sum x+y and returns z.
 func (z *Numeric) Add(x, y *Numeric) *Numeric {
-	if x.sign == NaN || y.sign == NaN {
+	if x.sign == numericNaN || y.sign == numericNaN {
 		return z.SetNaN()
 	}
 	if x.IsZero() {
@@ -363,11 +381,11 @@ func (z *Numeric) Add(x, y *Numeric) *Numeric {
 	}
 
 	var negative bool
-	z.digits, z.weight, negative = add(x.digits, x.weight, x.sign == Negative, y.digits, y.weight, y.sign == Negative)
+	z.digits, z.weight, negative = add(x.digits, x.weight, x.sign == numericNegative, y.digits, y.weight, y.sign == numericNegative)
 	if negative {
-		z.sign = Negative
+		z.sign = numericNegative
 	} else {
-		z.sign = Positive
+		z.sign = numericPositive
 	}
 
 	return z
@@ -384,6 +402,7 @@ func sub(d1 []int16, w1 int16, n1 bool, d2 []int16, w2 int16, n2 bool) (d3 []int
 	return add(d1, w1, n1, d2, w2, !n2)
 }
 
+// Neg sets z to -x and returns z.
 func (z *Numeric) Neg(x *Numeric) *Numeric {
 	if x.IsNaN() {
 		return z.SetNaN()
@@ -393,17 +412,18 @@ func (z *Numeric) Neg(x *Numeric) *Numeric {
 	}
 	z.Copy(x)
 
-	if x.sign == Positive {
-		z.sign = Negative
+	if x.sign == numericPositive {
+		z.sign = numericNegative
 	} else {
-		x.sign = Positive
+		z.sign = numericPositive
 	}
 
 	return z
 }
 
+// Sub sets z to the difference x-y and returns z.
 func (z *Numeric) Sub(x, y *Numeric) *Numeric {
-	if x.sign == NaN || y.sign == NaN {
+	if x.sign == numericNaN || y.sign == numericNaN {
 		return z.SetNaN()
 	}
 	if x.IsZero() {
@@ -414,16 +434,12 @@ func (z *Numeric) Sub(x, y *Numeric) *Numeric {
 	}
 
 	var negative bool
-	if x.sign == y.sign {
-		z.digits, z.weight, negative = sub(x.digits, x.weight, x.sign == Negative, y.digits, y.weight, y.sign == Negative)
-	} else {
-		z.digits, z.weight, negative = add(x.digits, x.weight, x.sign == Negative, y.digits, y.weight, !(y.sign == Negative))
-	}
+	z.digits, z.weight, negative = sub(x.digits, x.weight, x.sign == numericNegative, y.digits, y.weight, y.sign == numericNegative)
 
 	if negative {
-		z.sign = Negative
+		z.sign = numericNegative
 	} else {
-		z.sign = Positive
+		z.sign = numericPositive
 	}
 
 	return z
@@ -432,14 +448,14 @@ func (z *Numeric) Sub(x, y *Numeric) *Numeric {
 // This function is for subAbs only. Do not use this function directly.
 // Number 1 must be > number 2
 func subAbsOrdered(d1 []int16, w1 int16, d2 []int16, w2 int16) (d3 []int16, w3 int16) {
-	weightFrom := mathhelper.Min2Int(int(w1)-len(d1)+1, int(w2)-len(d2)+1)
-	weightTo := mathhelper.Max2Int(int(w1), int(w2))
+	weightFrom := mathh.Min2Int(int(w1)-len(d1)+1, int(w2)-len(d2)+1)
+	weightTo := mathh.Max2Int(int(w1), int(w2))
 	var underflow int16
 	var index int
 	for i := weightFrom; i <= weightTo; i++ {
 		tmp := digitByWeightAbs(d1, w1, i) - digitByWeightAbs(d2, w2, i) - underflow
 		if tmp < 0 {
-			tmp += base
+			tmp += numericBase
 			underflow = 1
 		} else {
 			underflow = 0
@@ -510,12 +526,12 @@ func mulAbs(d1 []int16, w1 int16, d2 []int16, w2 int16) (d3 []int16, w3 int16) {
 		// MaxInt64 > MAX(tmp) > MaxInt32 => use int64 (for overflow and for tmp)
 
 		var tmp = overflow
-		for j1 := mathhelper.Max2Int(0, i-len(d2)+1); j1 <= mathhelper.Min2Int(len(d1)-1, i); j1++ {
+		for j1 := mathh.Max2Int(0, i-len(d2)+1); j1 <= mathh.Min2Int(len(d1)-1, i); j1++ {
 			j2 := i - j1
 			tmp += int64(d1[len(d1)-1-j1]) * int64(d2[len(d2)-1-j2])
 		}
-		overflow = tmp / base
-		tmp = tmp % base
+		overflow = tmp / numericBase
+		tmp = tmp % numericBase
 		if d3 == nil && tmp != 0 {
 			requiredLen := col - i + 1 // Reserve 1 for overall overflow
 			d3 = make([]int16, requiredLen)
@@ -543,8 +559,9 @@ func mulAbs(d1 []int16, w1 int16, d2 []int16, w2 int16) (d3 []int16, w3 int16) {
 	return
 }
 
+// Mul sets z to the product x*y and returns z.
 func (z *Numeric) Mul(x, y *Numeric) *Numeric {
-	if x.sign == NaN || y.sign == NaN {
+	if x.sign == numericNaN || y.sign == numericNaN {
 		z.SetNaN()
 		return z
 	}
@@ -555,38 +572,39 @@ func (z *Numeric) Mul(x, y *Numeric) *Numeric {
 
 	z.digits, z.weight = mulAbs(x.digits, x.weight, y.digits, y.weight)
 	if x.sign == y.sign {
-		z.sign = Positive
+		z.sign = numericPositive
 	} else {
-		z.sign = Negative
+		z.sign = numericNegative
 	}
 
 	return z
 }
 
+// Abs sets z to |x| (the absolute value of x) and returns z.
 func (z *Numeric) Abs(x *Numeric) *Numeric {
 	z.Copy(x)
-	if x.sign == Negative {
-		z.sign = Positive
+	if x.sign == numericNegative {
+		z.sign = numericPositive
 	}
 	return z
 }
 
 // Sign returns first value as following:
 //
-//	-1 if x <   0
-//	 0 if x is ±0 or NaN
-//	+1 if x >   0
+//	-1 if x <  0
+//	 0 if x is 0
+//	+1 if x >  0
+//	+2 if x is NaN
 //
 func (x *Numeric) Sign() int {
 	switch {
+	case x.sign == numericNegative:
+		return -1
+	case x.sign == numericNaN:
+		return 2
 	case x.IsZero():
 		return 0
-	case x.sign == Positive:
-		return 1
-	case x.sign == Negative:
-		return -1
 	default:
-		return 0 // TODO what to return for NaN?
+		return 1
 	}
 }
-
