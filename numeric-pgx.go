@@ -41,19 +41,24 @@ func (n *Numeric) Scan(vr *pgx.ValueReader) error {
 		l := vr.ReadInt16()
 
 		if l < 0 || vr.Len()+2 != numericHeaderLen+int32(l)*2 {
-			return pgx.SerializationError(fmt.Sprintf("Received inconsistent Numeric: length %d, numer of digits %d", vr.Len(), l)) // It is hard cover this case with test
+			return pgx.SerializationError(fmt.Sprintf("Received inconsistent Numeric: length %d, number of digits = %d", vr.Len(), l)) // It is hard cover this case with test
 		}
 
 		n.weight = vr.ReadInt16()
 		n.sign = numericSign(vr.ReadInt16())
 
-		if n.sign != numericPositive && n.sign != numericNegative && n.sign != numericNaN {
+		if n.sign == numericNaN {
+			if l > 0 {
+				return pgx.SerializationError(fmt.Sprintf("Received inconsistent Numeric: NaN with number of digits = %d", n.sign)) // It is hard cover this case with test
+			}
+		} else if n.sign != numericPositive && n.sign != numericNegative {
 			return pgx.SerializationError(fmt.Sprintf("Received Numeric with invalid sign: %d", n.sign)) // It is hard cover this case with test
 		}
 
 		vr.ReadInt16() // Here we read dscale. Currently we just ignore it.
 
 		if l == 0 {
+			n.weight = 0 // PostgreSQL can return not very expected combination (9.4 can return NaN with Weight=99). Here it will be normalized.
 			n.digits = nil
 		} else {
 			n.digits = make([]int16, l)
