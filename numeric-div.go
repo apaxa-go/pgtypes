@@ -181,7 +181,6 @@ func trimAbs(d []int16, w int16) ([]int16, int16) {
 	for skipRight = len(d); skipRight > skipLeft+1 && d[skipRight-1] == 0; skipRight-- {
 	}
 
-	// TODO may be instead of slicing (and using originally allocated memory) create copy (if skip* is large)?
 	d = d[skipLeft:skipRight]
 
 	if len(d) == 0 {

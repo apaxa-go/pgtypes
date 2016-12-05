@@ -64,7 +64,6 @@ func ParseUUID(s string) (u UUID, err error) {
 		return
 	}
 
-	// TODO after testing remove check for "l"
 	if s[sDelim0At] != uuidDelim || s[sDelim1At] != uuidDelim || s[sDelim2At] != uuidDelim || s[sDelim3At] != uuidDelim {
 		err = errors.New("invalid UUID string delimiters")
 		return

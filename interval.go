@@ -13,14 +13,14 @@ import (
 
 // Predefined precisions for Interval.
 const (
-	IntervalSecondPrecision = 0
+	IntervalSecondPrecision      = 0
 	IntervalMillisecondPrecision = 3
 	IntervalMicrosecondPrecision = 6
-	IntervalNanosecondPrecision = 9
-	IntervalPicosecondPrecision = 12
-	IntervalGoPrecision = IntervalNanosecondPrecision
-	IntervalPgPrecision = IntervalMicrosecondPrecision
-	IntervalMaxPrecision = 12
+	IntervalNanosecondPrecision  = 9
+	IntervalPicosecondPrecision  = 12
+	IntervalGoPrecision          = IntervalNanosecondPrecision
+	IntervalPgPrecision          = IntervalMicrosecondPrecision
+	IntervalMaxPrecision         = 12
 )
 
 // RE for parse interval in postgres style specification.
@@ -106,6 +106,8 @@ func Year() Interval {
 // 	1 mons
 // 	2 year -34:56:78
 // 	00:00:00
+//
+// BUG(unsacrificed): ParseInterval may overflow SomeSeconds if computed SomeSeconds should be MinInt64.
 func ParseInterval(s string, p uint8) (i Interval, err error) {
 	if p > IntervalMaxPrecision {
 		i.precision = IntervalMaxPrecision
@@ -179,9 +181,8 @@ func ParseInterval(s string, p uint8) (i Interval, err error) {
 	i.SomeSeconds *= timeh.SecsInMin // Now SomeSeconds contains seconds
 
 	// seconds
-	// TODO possible overflow because of storing negative values as positive (MinInt64).
 	if parts[7] != "" {
-		ti64, err = strconvh.ParseInt64(parts[7])
+		ti64, err = strconvh.ParseInt64(parts[7]) // Possible overflow
 		if err != nil {
 			return
 		}
@@ -194,7 +195,7 @@ func ParseInterval(s string, p uint8) (i Interval, err error) {
 		if len(parts[8]) < int(p) {
 			parts[8] = stringsh.PadRightWithByte(parts[8], '0', int(p))
 		}
-		ti64, err = strconvh.ParseInt64(parts[8][:p])
+		ti64, err = strconvh.ParseInt64(parts[8][:p]) // Possible overflow
 		if err != nil {
 			return // It is impossible to cover this case because of RegExp and limits on p (p<Digits(MaxInt64))
 		}
@@ -289,6 +290,8 @@ func (i Interval) Precision() uint8 {
 
 // String returns string representation of interval.
 // Output format is the same as for Parse.
+//
+// BUG(unsacrificed): String may overflow SomeSeconds if SomeSeconds is MinInt64.
 func (i Interval) String() string {
 	if i.Months == 0 && i.Days == 0 && i.SomeSeconds == 0 {
 		return "00:00:00"
@@ -310,8 +313,8 @@ func (i Interval) String() string {
 
 	if i.SomeSeconds != 0 {
 		negativeTime := i.SomeSeconds < 0
-		if negativeTime { // TODO possible overflow because of MinInt64*-1
-			i.SomeSeconds *= -1
+		if negativeTime {
+			i.SomeSeconds *= -1 // Possible overflow
 		}
 
 		tmp := mathh.PowInt64(10, int64(i.precision))
