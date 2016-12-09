@@ -380,3 +380,9 @@ func TestNumeric_Sign(t *testing.T) {
 		t.Error("error with Sign")
 	}
 }
+
+func TestNewNumeric(t *testing.T) {
+	if !NewNumeric().IsZero() {
+		t.Error("bad new numeric")
+	}
+}

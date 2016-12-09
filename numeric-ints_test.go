@@ -56,8 +56,8 @@ func TestNumeric_SetInt64(t *testing.T) {
 			t.Errorf("expect %v, got %v", v, i)
 		}
 
-		n2:=NewInt64(v)
-		if str:=strconvh.FormatInt64(v); n2.String()!=str{
+		n2 := NewInt64(v)
+		if str := strconvh.FormatInt64(v); n2.String() != str {
 			t.Errorf("expect %v, got %v", str, n2.String())
 		}
 	}

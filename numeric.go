@@ -608,3 +608,9 @@ func (x *Numeric) Sign() int {
 		return 1
 	}
 }
+
+// NewNumeric allocates and returns a new Numeric set to 0.
+func NewNumeric() *Numeric {
+	var r Numeric
+	return &r
+}
