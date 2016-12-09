@@ -43,6 +43,11 @@ func TestNumeric_SetInt(t *testing.T) {
 		if i := n.Int(); i != v {
 			t.Errorf("expect %v, got %v", v, i)
 		}
+
+		n2 := NewInt(v)
+		if str := strconvh.FormatInt(v); n2.String() != str {
+			t.Errorf("expect %v, got %v", str, n2.String())
+		}
 	}
 }
 
@@ -94,6 +99,11 @@ func TestNumeric_SetInt8(t *testing.T) {
 		}
 		if i := n.Int8(); i != v {
 			t.Errorf("expect %v, got %v", v, i)
+		}
+
+		n2 := NewInt8(v)
+		if str := strconvh.FormatInt8(v); n2.String() != str {
+			t.Errorf("expect %v, got %v", str, n2.String())
 		}
 	}
 }
@@ -147,6 +157,11 @@ func TestNumeric_SetInt16(t *testing.T) {
 		if i := n.Int16(); i != v {
 			t.Errorf("expect %v, got %v", v, i)
 		}
+
+		n2 := NewInt16(v)
+		if str := strconvh.FormatInt16(v); n2.String() != str {
+			t.Errorf("expect %v, got %v", str, n2.String())
+		}
 	}
 }
 
@@ -198,6 +213,11 @@ func TestNumeric_SetInt32(t *testing.T) {
 		}
 		if i := n.Int32(); i != v {
 			t.Errorf("expect %v, got %v", v, i)
+		}
+
+		n2 := NewInt32(v)
+		if str := strconvh.FormatInt32(v); n2.String() != str {
+			t.Errorf("expect %v, got %v", str, n2.String())
 		}
 	}
 }
@@ -251,6 +271,11 @@ func TestNumeric_SetUint(t *testing.T) {
 		if i := n.Uint(); i != v {
 			t.Errorf("expect %v, got %v", v, i)
 		}
+
+		n2 := NewUint(v)
+		if str := strconvh.FormatUint(v); n2.String() != str {
+			t.Errorf("expect %v, got %v", str, n2.String())
+		}
 	}
 }
 
@@ -302,6 +327,11 @@ func TestNumeric_SetUint8(t *testing.T) {
 		}
 		if i := n.Uint8(); i != v {
 			t.Errorf("expect %v, got %v", v, i)
+		}
+
+		n2 := NewUint8(v)
+		if str := strconvh.FormatUint8(v); n2.String() != str {
+			t.Errorf("expect %v, got %v", str, n2.String())
 		}
 	}
 }
@@ -355,6 +385,11 @@ func TestNumeric_SetUint16(t *testing.T) {
 		if i := n.Uint16(); i != v {
 			t.Errorf("expect %v, got %v", v, i)
 		}
+
+		n2 := NewUint16(v)
+		if str := strconvh.FormatUint16(v); n2.String() != str {
+			t.Errorf("expect %v, got %v", str, n2.String())
+		}
 	}
 }
 
@@ -407,6 +442,11 @@ func TestNumeric_SetUint32(t *testing.T) {
 		if i := n.Uint32(); i != v {
 			t.Errorf("expect %v, got %v", v, i)
 		}
+
+		n2 := NewUint32(v)
+		if str := strconvh.FormatUint32(v); n2.String() != str {
+			t.Errorf("expect %v, got %v", str, n2.String())
+		}
 	}
 }
 
@@ -458,6 +498,11 @@ func TestNumeric_SetUint64(t *testing.T) {
 		}
 		if i := n.Uint64(); i != v {
 			t.Errorf("expect %v, got %v", v, i)
+		}
+
+		n2 := NewUint64(v)
+		if str := strconvh.FormatUint64(v); n2.String() != str {
+			t.Errorf("expect %v, got %v", str, n2.String())
 		}
 	}
 }

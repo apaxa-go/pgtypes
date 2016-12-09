@@ -318,3 +318,57 @@ func (x *Numeric) Int32() int32 {
 
 	return r
 }
+
+// NewInt allocates and returns a new Numeric set to x.
+func NewInt(x int) *Numeric {
+	var r Numeric
+	return r.SetInt(x)
+}
+
+// NewInt8 allocates and returns a new Numeric set to x.
+func NewInt8(x int8) *Numeric {
+	var r Numeric
+	return r.SetInt8(x)
+}
+
+// NewInt16 allocates and returns a new Numeric set to x.
+func NewInt16(x int16) *Numeric {
+	var r Numeric
+	return r.SetInt16(x)
+}
+
+// NewInt32 allocates and returns a new Numeric set to x.
+func NewInt32(x int32) *Numeric {
+	var r Numeric
+	return r.SetInt32(x)
+}
+
+// NewUint allocates and returns a new Numeric set to x.
+func NewUint(x uint) *Numeric {
+	var r Numeric
+	return r.SetUint(x)
+}
+
+// NewUint8 allocates and returns a new Numeric set to x.
+func NewUint8(x uint8) *Numeric {
+	var r Numeric
+	return r.SetUint8(x)
+}
+
+// NewUint16 allocates and returns a new Numeric set to x.
+func NewUint16(x uint16) *Numeric {
+	var r Numeric
+	return r.SetUint16(x)
+}
+
+// NewUint32 allocates and returns a new Numeric set to x.
+func NewUint32(x uint32) *Numeric {
+	var r Numeric
+	return r.SetUint32(x)
+}
+
+// NewUint64 allocates and returns a new Numeric set to x.
+func NewUint64(x uint64) *Numeric {
+	var r Numeric
+	return r.SetUint64(x)
+}

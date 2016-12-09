@@ -170,3 +170,21 @@ func (x *Numeric) Int64() int64 {
 
 	return r
 }
+
+//replacer:replace
+//replacer:old int64	Int64
+//replacer:new int	Int
+//replacer:new int8	Int8
+//replacer:new int16	Int16
+//replacer:new int32	Int32
+//replacer:new uint	Uint
+//replacer:new uint8	Uint8
+//replacer:new uint16	Uint16
+//replacer:new uint32	Uint32
+//replacer:new uint64	Uint64
+
+// NewInt64 allocates and returns a new Numeric set to x.
+func NewInt64(x int64)*Numeric{
+	var r Numeric
+	return r.SetInt64(x)
+}
