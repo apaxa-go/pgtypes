@@ -1,12 +1,8 @@
 package pgtypes
 
-import (
-	"github.com/jackc/pgx"
-	"strings"
-	"testing"
-)
+import "testing"
 
-func testInterval_ScanPgx(t *testing.T) {
+func TestInterval_Scan(t *testing.T) {
 	type testElement struct {
 		sql string
 		i   Interval
@@ -38,17 +34,17 @@ func testInterval_ScanPgx(t *testing.T) {
 	}
 
 	for _, v := range tests {
-		if rows, err := pgxConn.Query(v.sql); err != nil { // Do not use QueryRow because it is harder to split error origin.
+		if rows, err := pqConn.Query(v.sql); err != nil { // Do not use QueryRow because it is harder to split error origin.
 			t.Errorf("%v: bad query", v.sql)
 		} else {
 			func() {
 				var r Interval
-				defer rows.Close()
+				defer func() { _ = rows.Close() }()
 				if !rows.Next() {
 					t.Errorf("%v: no row", v.sql)
 				}
-				if err := rows.Scan(&r); (err != nil) != v.err || r != v.i {
-					t.Errorf("%v: expect %v %v, got %v %v", v.sql, v.i, v.err, r, err)
+				if err := rows.Scan(&r); (err != nil) != v.err || (!v.err && r != v.i) {
+					t.Errorf("%v: expect %#v %v, got %#v %v", v.sql, v.i, v.err, r, err)
 				}
 				if rows.Next() {
 					t.Errorf("%v: multiple row", v.sql)
@@ -58,40 +54,7 @@ func testInterval_ScanPgx(t *testing.T) {
 	}
 }
 
-func TestInterval_ScanPgx(t *testing.T) {
-	testInterval_ScanPgx(t)
-
-	save := pgx.DefaultTypeFormats["interval"]
-	switch save {
-	case pgx.TextFormatCode:
-		pgx.DefaultTypeFormats["interval"] = pgx.BinaryFormatCode
-	case pgx.BinaryFormatCode:
-		pgx.DefaultTypeFormats["interval"] = pgx.TextFormatCode
-	}
-
-	// Reconnect with new FormatCode
-	var err error
-	if err = pgxConn.Close(); err != nil {
-		panic(err)
-	}
-	if pgxConn, err = pgx.Connect(pgxConf); err != nil {
-		panic(err)
-	}
-
-	testInterval_ScanPgx(t)
-
-	pgx.DefaultTypeFormats["interval"] = save
-
-	// Reconnect with old FormatCode
-	if err = pgxConn.Close(); err != nil {
-		panic(err)
-	}
-	if pgxConn, err = pgx.Connect(pgxConf); err != nil {
-		panic(err)
-	}
-}
-
-func TestInterval_Encode(t *testing.T) {
+func TestInterval_Value(t *testing.T) {
 	var tests = []Interval{
 		Interval{0, 0, 0, IntervalPgPrecision},
 		Interval{0, 0, 1e6, IntervalPgPrecision},
@@ -115,12 +78,12 @@ func TestInterval_Encode(t *testing.T) {
 	}
 
 	for _, v := range tests {
-		if rows, err := pgxConn.Query("SELECT $1::INTERVAL", v); err != nil {
+		if rows, err := pqConn.Query("SELECT $1::INTERVAL", v); err != nil {
 			t.Errorf("%v: bad query", v)
 		} else {
 			func() {
 				var r Interval
-				defer rows.Close()
+				defer func() { _ = rows.Close() }()
 				if !rows.Next() {
 					t.Errorf("%v: no row", v)
 				}
@@ -132,13 +95,5 @@ func TestInterval_Encode(t *testing.T) {
 				}
 			}()
 		}
-	}
-}
-
-func TestInterval_Encode2(t *testing.T) {
-	rightPrefix := "Interval.Encode cannot encode into OID "
-	if rows, err := pgxConn.Query("SELECT $1::INTEGER", Interval{1, 2, 3, IntervalPgPrecision}); err == nil || !strings.HasPrefix(err.Error(), rightPrefix) {
-		t.Errorf("expect '%v', got %v", rightPrefix, err)
-		rows.Close()
 	}
 }

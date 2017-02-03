@@ -1,7 +1,12 @@
 language: go
 sudo: false
+os:
+  - linux
+  - osx
 go:
-  - tip
+  - 1.x
+  - 1.7.x
+  - master
 services:
   - postgresql
 addons:
@@ -11,9 +16,29 @@ env:
     - PG_HOST=127.0.0.1
     - PG_DATABASE=test_pgtypes
     - PG_USER=postgres
+  - GO_ARCH=amd64
+  - GO_ARCH=386
+  - GO_OS=windows GO_ARCH=amd64
+  - GO_OS=windows GO_ARCH=386
+matrix:
+  exclude:
+    - os: osx
+      env: GO_ARCH=386
+    - os: osx
+      env: GO_OS=windows GO_ARCH=amd64
+    - os: osx
+      env: GO_OS=windows GO_ARCH=386
+  allow_failures:
+      - go: master
 before_install:
-  - go get github.com/mattn/goveralls
+  - export GOARCH=$GO_ARCH
+  - export GOOS=$GO_OS
+  - export PATH=${PATH}:${GOPATH}/bin/:${GOPATH}/bin/`go env GOOS`_`go env GOARCH`/
+  - go env
+  - export
+  - if [[ "$GOOS" != "windows" ]]; then go get github.com/mattn/goveralls; fi
 before_script:
-  - psql -c "create database $PG_DATABASE;" -U postgres
+    - psql -c "create database $PG_DATABASE;" -U postgres
 script:
-  - $HOME/gopath/bin/goveralls -service travis-ci
+  - if [[ "$GOOS" == "windows" ]]; then go build -v ./... ; fi
+  - if [[ "$GOOS" != "windows" ]]; then goveralls -service travis-ci ; fi

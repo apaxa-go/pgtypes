@@ -5,13 +5,11 @@ import (
 	"fmt"
 )
 
-// sqlScan implements the sql.Scanner interface.
-// Warning: Because of conflict between pgx.Scanner and sql.Scanner this method has prefixed with "sql".
-// Warning: If you want to use UUID with sql (not pgx) just remove methods "Scan", "FormatCode" & "Encode" and rename "sqlScan" to "Scan" and "sqlValue" to "Value".
+// Scan implements the sql.Scanner interface.
 // Can parse:
 //  bytes as raw UUID representations (as-is)
 //  string/bytes as default UUID string representation
-func (u *UUID) sqlScan(src interface{}) (err error) {
+func (u *UUID) Scan(src interface{}) (err error) {
 	switch src := src.(type) {
 	case []byte:
 		switch len(src) {
@@ -30,8 +28,7 @@ func (u *UUID) sqlScan(src interface{}) (err error) {
 	return fmt.Errorf("uuid: cannot convert %T to UUID", src)
 }
 
-// sqlValue implements the driver.Valuer interface.
-// Warning: see sqlScan warning.
-func (u UUID) sqlValue() (driver.Value, error) {
+// Value implements the driver.Valuer interface.
+func (u UUID) Value() (driver.Value, error) {
 	return u.String(), nil
 }

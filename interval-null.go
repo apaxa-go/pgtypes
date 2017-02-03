@@ -1,12 +1,13 @@
 package pgtypes
 
 import (
+	"database/sql/driver"
 	"fmt"
 	"github.com/jackc/pgx"
 )
 
 // NullInterval represents an Interval that may be null.
-// It implements the pgx.Scanner and pgx.Encoder interfaces so it may be used both as an argument to Query[Row] and a destination for Scan.
+// It implements the pgx.PgxScanner and pgx.Encoder interfaces so it may be used both as an argument to Query[Row] and a destination for ScanPgx.
 //
 // If Valid is false then the value is NULL.
 type NullInterval struct {
@@ -14,10 +15,10 @@ type NullInterval struct {
 	Valid    bool
 }
 
-// Scan implements the pgx.Scanner interface.
-func (n *NullInterval) Scan(vr *pgx.ValueReader) error {
+// ScanPgx implements the pgx.PgxScanner interface.
+func (n *NullInterval) ScanPgx(vr *pgx.ValueReader) error {
 	if vr.Type().DataType != IntervalOid {
-		return pgx.SerializationError(fmt.Sprintf("NullInterval.Scan cannot decode %s (OID %d)", vr.Type().DataTypeName, vr.Type().DataType))
+		return pgx.SerializationError(fmt.Sprintf("NullInterval.ScanPgx cannot decode %s (OID %d)", vr.Type().DataTypeName, vr.Type().DataType))
 	}
 
 	if vr.Len() == -1 {
@@ -26,7 +27,7 @@ func (n *NullInterval) Scan(vr *pgx.ValueReader) error {
 	}
 
 	n.Valid = true
-	return n.Interval.Scan(vr)
+	return n.Interval.ScanPgx(vr)
 }
 
 // FormatCode implements the pgx.Encoder interface.
@@ -49,4 +50,23 @@ func (n NullInterval) Encode(w *pgx.WriteBuf, oid pgx.Oid) error {
 // Nullable returns valid NullInterval with Interval i.
 func (i Interval) Nullable() NullInterval {
 	return NullInterval{i, true}
+}
+
+// Scan implements the sql.Scanner interface.
+func (n *NullInterval) Scan(src interface{}) (err error) {
+	if src == nil {
+		*n = NullInterval{Interval: Interval{precision: IntervalPgPrecision}}
+		return nil
+	}
+	err = n.Interval.Scan(src)
+	n.Valid = err == nil
+	return
+}
+
+// Value implements the driver.Valuer interface.
+func (n NullInterval) Value() (driver.Value, error) {
+	if !n.Valid {
+		return nil, nil
+	}
+	return n.Interval.Value()
 }

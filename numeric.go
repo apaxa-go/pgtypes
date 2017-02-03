@@ -547,13 +547,13 @@ func mulAbs(d1 []int16, w1 int16, d2 []int16, w2 int16) (d3 []int16, w3 int16) {
 		w3 = 0
 	} else if overflow == 0 {
 		d3 = d3[1:]
-		w3 = int16(w1 + w2)
+		w3 = w1 + w2
 	} else {
 		if d3 == nil {
 			d3 = make([]int16, 1)
 		}
 		d3[0] = int16(overflow)
-		w3 = int16(w1 + w2 + 1)
+		w3 = w1 + w2 + 1
 	}
 
 	return

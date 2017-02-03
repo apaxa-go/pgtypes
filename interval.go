@@ -117,7 +117,7 @@ func ParseInterval(s string, p uint8) (i Interval, err error) {
 
 	parts := re.FindStringSubmatch(s)
 	if parts == nil || len(parts) != 9 {
-		err = errors.New("Unable to parse interval from string " + s)
+		err = errors.New("unable to parse interval from string " + s)
 		return
 	}
 
@@ -380,7 +380,7 @@ func (i Interval) Sub(sub Interval) Interval {
 
 // Mul returns interval i multiplied by mul. Each part of Interval multiples independently.
 func (i Interval) Mul(mul int64) Interval {
-	i.Months, i.Days, i.SomeSeconds = int32(int64(i.Months)*mul), int32(int64(i.Days)*mul), int64(int64(i.SomeSeconds)*mul)
+	i.Months, i.Days, i.SomeSeconds = int32(int64(i.Months)*mul), int32(int64(i.Days)*mul), i.SomeSeconds*mul
 	return i
 }
 

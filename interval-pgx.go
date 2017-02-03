@@ -17,14 +17,14 @@ func init() {
 	pgx.DefaultTypeFormats["interval"] = pgx.BinaryFormatCode
 }
 
-// Scan implements the pgx.Scanner interface.
-func (i *Interval) Scan(vr *pgx.ValueReader) error {
+// ScanPgx implements the pgx.PgxScanner interface.
+func (i *Interval) ScanPgx(vr *pgx.ValueReader) error {
 	if vr.Type().DataType != IntervalOid {
-		return pgx.SerializationError(fmt.Sprintf("Interval.Scan cannot decode %s (OID %d)", vr.Type().DataTypeName, vr.Type().DataType))
+		return pgx.SerializationError(fmt.Sprintf("Interval.ScanPgx cannot decode %s (OID %d)", vr.Type().DataTypeName, vr.Type().DataType))
 	}
 
 	if vr.Len() == -1 {
-		return pgx.SerializationError("Interval.Scan cannot parse NULL value")
+		return pgx.SerializationError("Interval.ScanPgx cannot parse NULL value")
 	}
 
 	switch vr.Type().FormatCode {

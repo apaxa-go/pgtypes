@@ -18,14 +18,14 @@ func init() {
 	pgx.DefaultTypeFormats["numeric"] = pgx.BinaryFormatCode
 }
 
-// Scan implements the pgx.Scanner interface.
-func (n *Numeric) Scan(vr *pgx.ValueReader) error {
+// ScanPgx implements the pgx.PgxScanner interface.
+func (n *Numeric) ScanPgx(vr *pgx.ValueReader) error {
 	if vr.Type().DataType != NumericOid {
-		return pgx.SerializationError(fmt.Sprintf("Numeric.Scan cannot decode %s (OID %d)", vr.Type().DataTypeName, vr.Type().DataType))
+		return pgx.SerializationError(fmt.Sprintf("Numeric.ScanPgx cannot decode %s (OID %d)", vr.Type().DataTypeName, vr.Type().DataType))
 	}
 
 	if vr.Len() == -1 {
-		return pgx.SerializationError("Numeric.Scan cannot parse NULL value")
+		return pgx.SerializationError("Numeric.ScanPgx cannot parse NULL value")
 	}
 
 	switch vr.Type().FormatCode {

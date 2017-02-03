@@ -5,8 +5,8 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/apaxa-go/pgtypes)](https://goreportcard.com/report/github.com/apaxa-go/pgtypes)
 [![GoDoc](https://godoc.org/github.com/apaxa-go/pgtypes?status.svg)](https://godoc.org/github.com/apaxa-go/pgtypes)
 
-Package PGTYPES implements some PostgreSQL types in the GoLang.
-Implemented types can be simply used in DB communication and/or separately.
+Package PgTypes implements some PostgreSQL types in the GoLang.
+Implemented types can be simply used in DB communication via [Pgx](https://github.com/jackc/pgx) or via [Pq](https://github.com/lib/pq) and/or separately.
 
 Currently implemented types:
 * Interval

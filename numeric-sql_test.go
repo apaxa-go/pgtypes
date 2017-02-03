@@ -1,14 +1,11 @@
 package pgtypes
 
 import (
-	"github.com/apaxa-go/helper/mathh"
-	"github.com/jackc/pgx"
 	"reflect"
-	"strings"
 	"testing"
 )
 
-func testNumeric_ScanPgx(t *testing.T) {
+func TestNumeric_Scan(t *testing.T) {
 	type testElement struct {
 		sql string
 		n   *Numeric
@@ -43,12 +40,12 @@ func testNumeric_ScanPgx(t *testing.T) {
 	}
 
 	for _, v := range tests {
-		if rows, err := pgxConn.Query(v.sql); err != nil { // Do not use QueryRow because it is harder to split error origin.
+		if rows, err := pqConn.Query(v.sql); err != nil { // Do not use QueryRow because it is harder to split error origin.
 			t.Errorf("%v: bad query", v.sql)
 		} else {
 			func() {
 				var r Numeric
-				defer rows.Close()
+				defer func() { _ = rows.Close() }()
 				if !rows.Next() {
 					t.Errorf("%v: no row", v.sql)
 				}
@@ -63,40 +60,7 @@ func testNumeric_ScanPgx(t *testing.T) {
 	}
 }
 
-func TestNumeric_ScanPgx(t *testing.T) {
-	testNumeric_ScanPgx(t)
-
-	save := pgx.DefaultTypeFormats["numeric"]
-	switch save {
-	case pgx.TextFormatCode:
-		pgx.DefaultTypeFormats["numeric"] = pgx.BinaryFormatCode
-	case pgx.BinaryFormatCode:
-		pgx.DefaultTypeFormats["numeric"] = pgx.TextFormatCode
-	}
-
-	// Reconnect with new FormatCode
-	var err error
-	if err = pgxConn.Close(); err != nil {
-		panic(err)
-	}
-	if pgxConn, err = pgx.Connect(pgxConf); err != nil {
-		panic(err)
-	}
-
-	testNumeric_ScanPgx(t)
-
-	pgx.DefaultTypeFormats["numeric"] = save
-
-	// Reconnect with old FormatCode
-	if err = pgxConn.Close(); err != nil {
-		panic(err)
-	}
-	if pgxConn, err = pgx.Connect(pgxConf); err != nil {
-		panic(err)
-	}
-}
-
-func TestNumeric_Encode(t *testing.T) {
+func TestNumeric_Value(t *testing.T) {
 	setString := func(s string) *Numeric {
 		var n Numeric
 		n.setString(s)
@@ -123,12 +87,12 @@ func TestNumeric_Encode(t *testing.T) {
 		setString("-0.0000456"),
 	}
 	for _, v := range tests {
-		if rows, err := pgxConn.Query("SELECT $1::Numeric", v); err != nil {
+		if rows, err := pqConn.Query("SELECT $1::Numeric", v); err != nil {
 			t.Error("bad query")
 		} else {
 			func() {
 				var r Numeric
-				defer rows.Close()
+				defer func() { _ = rows.Close() }()
 				if !rows.Next() {
 					t.Error("no row")
 					return
@@ -141,23 +105,5 @@ func TestNumeric_Encode(t *testing.T) {
 				}
 			}()
 		}
-	}
-}
-
-func TestNumeric_Encode2(t *testing.T) {
-	rightPrefix := "Numeric.Encode cannot encode into OID "
-	if rows, err := pgxConn.Query("SELECT $1::INTEGER", Numeric{}); err == nil || !strings.HasPrefix(err.Error(), rightPrefix) {
-		t.Errorf("expect '%v', got %v", rightPrefix, err)
-		rows.Close()
-	}
-
-	rightPrefix = "Numeric.Encode cannot encode so much digits"
-	var n Numeric
-	n.digits = make([]int16, mathh.MaxInt16+1)
-	n.digits[0] = 1
-	n.digits[len(n.digits)-1] = 1
-	if rows, err := pgxConn.Query("SELECT $1::NUMERIC", n); err == nil || !strings.HasPrefix(err.Error(), rightPrefix) {
-		t.Errorf("expect '%v', got %v", rightPrefix, err)
-		rows.Close()
 	}
 }

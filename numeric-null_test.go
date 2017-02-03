@@ -7,21 +7,21 @@ import (
 	"testing"
 )
 
-type nullNumericTestElement struct {
-	sql string
-	n   NullNumeric
-	err bool
-}
+func testNullNumeric_ScanPgx(t *testing.T) {
+	type testElement struct {
+		sql string
+		n   NullNumeric
+		err bool
+	}
 
-var nullNumericTests = []nullNumericTestElement{
-	{"SELECT '0'::Numeric", NullNumeric{*((&Numeric{}).SetZero()), true}, false},
-	{"SELECT 'string'::TEXT", NullNumeric{}, true},
-	{"SELECT null::Numeric", NullNumeric{Numeric{}, false}, false},
-}
+	var tests = []testElement{
+		{"SELECT '0'::Numeric", NullNumeric{*((&Numeric{}).SetZero()), true}, false},
+		{"SELECT 'string'::TEXT", NullNumeric{}, true},
+		{"SELECT null::Numeric", NullNumeric{Numeric{}, false}, false},
+	}
 
-func testNullNumeric_Scan(t *testing.T) {
-	for _, v := range nullNumericTests {
-		if rows, err := conn.Query(v.sql); err != nil { // Do not use QueryRow because it is harder to split error origin.
+	for _, v := range tests {
+		if rows, err := pgxConn.Query(v.sql); err != nil { // Do not use QueryRow because it is harder to split error origin.
 			t.Errorf("%v: bad query", v.sql)
 		} else {
 			func() {
@@ -42,8 +42,8 @@ func testNullNumeric_Scan(t *testing.T) {
 	}
 }
 
-func TestNullNumeric_Scan(t *testing.T) {
-	testNullNumeric_Scan(t)
+func TestNullNumeric_ScanPgx(t *testing.T) {
+	testNullNumeric_ScanPgx(t)
 
 	save := pgx.DefaultTypeFormats["numeric"]
 	switch save {
@@ -55,46 +55,47 @@ func TestNullNumeric_Scan(t *testing.T) {
 
 	// Reconnect with new FormatCode
 	var err error
-	if err = conn.Close(); err != nil {
+	if err = pgxConn.Close(); err != nil {
 		panic(err)
 	}
-	if conn, err = pgx.Connect(conf); err != nil {
+	if pgxConn, err = pgx.Connect(pgxConf); err != nil {
 		panic(err)
 	}
 
-	testNullNumeric_Scan(t)
+	testNullNumeric_ScanPgx(t)
 
 	pgx.DefaultTypeFormats["numeric"] = save
 
 	// Reconnect with old FormatCode
-	if err = conn.Close(); err != nil {
+	if err = pgxConn.Close(); err != nil {
 		panic(err)
 	}
-	if conn, err = pgx.Connect(conf); err != nil {
+	if pgxConn, err = pgx.Connect(pgxConf); err != nil {
 		panic(err)
 	}
 }
 
 func TestNullNumeric_Encode(t *testing.T) {
-	for _, v := range nullNumericTests {
-		if v.err {
-			continue
-		}
+	var tests = []NullNumeric{
+		NullNumeric{*((&Numeric{}).SetZero()), true},
+		NullNumeric{Numeric{}, false},
+	}
 
-		if rows, err := conn.Query("SELECT $1::Numeric", v.n); err != nil {
-			t.Errorf("%v: bad query", v.n)
+	for _, v := range tests {
+		if rows, err := pgxConn.Query("SELECT $1::Numeric", v); err != nil {
+			t.Errorf("%v: bad query", v)
 		} else {
 			func() {
 				var r NullNumeric
 				defer rows.Close()
 				if !rows.Next() {
-					t.Errorf("%v: no row", v.n)
+					t.Errorf("%v: no row", v)
 				}
-				if err := rows.Scan(&r); !reflect.DeepEqual(r, v.n) || err != nil {
-					t.Errorf("expect %v %v, got %v %v", v.n, nil, r, err)
+				if err := rows.Scan(&r); !reflect.DeepEqual(r, v) || err != nil {
+					t.Errorf("%v: expect %v %v, got %v %v", v, v, nil, r, err)
 				}
 				if rows.Next() {
-					t.Errorf("%v: multiple row", v.n)
+					t.Errorf("%v: multiple row", v)
 				}
 			}()
 		}
@@ -103,7 +104,7 @@ func TestNullNumeric_Encode(t *testing.T) {
 
 func TestNullNumeric_Encode2(t *testing.T) {
 	rightPrefix := "NullNumeric.Encode cannot encode into OID "
-	if rows, err := conn.Query("SELECT $1::INTEGER", NullNumeric{Numeric{}, true}); err == nil || !strings.HasPrefix(err.Error(), rightPrefix) {
+	if rows, err := pgxConn.Query("SELECT $1::INTEGER", NullNumeric{Numeric{}, true}); err == nil || !strings.HasPrefix(err.Error(), rightPrefix) {
 		t.Errorf("expect '%v', got %v", rightPrefix, err)
 		rows.Close()
 	}
@@ -115,5 +116,67 @@ func TestNumeric_Nullable(t *testing.T) {
 	nn := n.Nullable()
 	if !nn.Valid || !reflect.DeepEqual(nn.Numeric, n) {
 		t.Errorf("expect %v %v, got %v %v", true, n, nn.Valid, nn.Numeric)
+	}
+}
+
+func TestNullNumeric_Scan(t *testing.T) {
+	type testElement struct {
+		sql string
+		n   NullNumeric
+		err bool
+	}
+
+	var tests = []testElement{
+		{"SELECT '0'::Numeric", NullNumeric{*((&Numeric{}).SetZero()), true}, false},
+		{"SELECT 'string'::TEXT", NullNumeric{}, true},
+		{"SELECT null::Numeric", NullNumeric{Numeric{}, false}, false},
+	}
+
+	for _, v := range tests {
+		if rows, err := pqConn.Query(v.sql); err != nil { // Do not use QueryRow because it is harder to split error origin.
+			t.Errorf("%v: bad query", v.sql)
+		} else {
+			func() {
+				var r NullNumeric
+				defer func() { _ = rows.Close() }()
+				if !rows.Next() {
+					t.Errorf("%v: no row", v.sql)
+					return
+				}
+				if err := rows.Scan(&r); (err != nil) != v.err || !reflect.DeepEqual(r, v.n) {
+					t.Errorf("%v: expect %v %v, got %v %v", v.sql, v.n, v.err, r, err)
+				}
+				if rows.Next() {
+					t.Errorf("%v: multiple row", v.sql)
+				}
+			}()
+		}
+	}
+}
+
+func TestNullNumeric_Value(t *testing.T) {
+	var tests = []NullNumeric{
+		NullNumeric{*((&Numeric{}).SetZero()), true},
+		NullNumeric{Numeric{}, false},
+	}
+
+	for _, v := range tests {
+		if rows, err := pqConn.Query("SELECT $1::Numeric", v); err != nil {
+			t.Errorf("%v: bad query", v)
+		} else {
+			func() {
+				var r NullNumeric
+				defer func() { _ = rows.Close() }()
+				if !rows.Next() {
+					t.Errorf("%v: no row", v)
+				}
+				if err := rows.Scan(&r); !reflect.DeepEqual(r, v) || err != nil {
+					t.Errorf("expect %v %v, got %v %v", v, nil, r, err)
+				}
+				if rows.Next() {
+					t.Errorf("%v: multiple row", v)
+				}
+			}()
+		}
 	}
 }
