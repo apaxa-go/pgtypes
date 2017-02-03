@@ -16,10 +16,11 @@ env:
     - PG_HOST=127.0.0.1
     - PG_DATABASE=test_pgtypes
     - PG_USER=postgres
-  - GO_ARCH=amd64
-  - GO_ARCH=386
-  - GO_OS=windows GO_ARCH=amd64
-  - GO_OS=windows GO_ARCH=386
+  matrix:
+    - GO_ARCH=amd64
+    - GO_ARCH=386
+    - GO_OS=windows GO_ARCH=amd64
+    - GO_OS=windows GO_ARCH=386
 matrix:
   exclude:
     - os: osx
