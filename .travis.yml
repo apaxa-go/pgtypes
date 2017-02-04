@@ -41,8 +41,9 @@ before_install:
   - export
   - if [[ "$GOOS" != "windows" ]]; then go get github.com/mattn/goveralls ; fi
 before_script:
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then pg_ctl -D /usr/local/var/postgres start ; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then pg_ctl -D /usr/local/var/postgres -l postgres.log start ; fi
   - psql -c "create database $PG_DATABASE;" -U postgres
 script:
   - if [[ "$GOOS" == "windows" ]]; then go build -v ./... ; fi
   - if [[ "$GOOS" != "windows" ]]; then goveralls -service travis-ci ; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then cat postgres.log ; fi
