@@ -10,7 +10,7 @@ go:
 services:
   - postgresql
 addons:
-  postgresql: "9.4"
+  postgresql: "9.5"
 env:
   global:
     - PG_HOST=127.0.0.1
