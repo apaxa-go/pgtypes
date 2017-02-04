@@ -39,9 +39,9 @@ before_install:
   - export PATH=${PATH}:${GOPATH}/bin/:${GOPATH}/bin/`go env GOOS`_`go env GOARCH`/
   - go env
   - export
-  - if [[ "$GOOS" != "windows" ]]; then go get github.com/mattn/goveralls; fi
+  - if [[ "$GOOS" != "windows" ]]; then go get github.com/mattn/goveralls ; fi
 before_script:
-  - pg_ctl -D /usr/local/var/postgres start
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then pg_ctl -D /usr/local/var/postgres start ; fi
   - psql -c "create database $PG_DATABASE;" -U postgres
 script:
   - if [[ "$GOOS" == "windows" ]]; then go build -v ./... ; fi
