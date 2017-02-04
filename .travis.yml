@@ -1,7 +1,7 @@
 language: go
 sudo: false
 os:
-  - linux
+  #- linux
   - osx
 dist: trusty
 osx_image: xcode8
