@@ -1,7 +1,7 @@
 language: go
 sudo: false
 os:
-  #- linux
+  - linux
   - osx
 dist: trusty
 osx_image: xcode8
@@ -41,16 +41,11 @@ before_install:
   - export
   - if [[ "$GOOS" != "windows" ]]; then go get github.com/mattn/goveralls ; fi
 before_script:
-  #- if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then pg_ctl -D /usr/local/var/postgres -l postgres.log start ; fi
-  #- if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then cat postgres.log ; fi
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then rm -rf /usr/local/var/postgres; fi
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then initdb /usr/local/var/postgres; fi
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then pg_ctl -D /usr/local/var/postgres start; fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then createuser -s postgres; fi
-  #
-  #
-  - psql -c "create database $PG_DATABASE;" -U postgres
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then createuser -s $PG_USER; fi
+  - psql -c "create database $PG_DATABASE;" -U $PG_USER
 script:
   - if [[ "$GOOS" == "windows" ]]; then go build -v ./... ; fi
   - if [[ "$GOOS" != "windows" ]]; then goveralls -service travis-ci ; fi
-  #- if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then cat postgres.log ; fi
